@@ -1,23 +1,68 @@
+/**
+ * express-error-handler
+ * 
+ * A graceful error handler for Express
+ * applications.
+ *
+ * Copyright (C) 2013 Eric Elliott
+ * 
+ * Written for
+ * "Programming JavaScript Applications"
+ * (O'Reilly)
+ *
+ * MIT License
+ **/
+
 'use strict';
 
-module.exports = function createHandler(server,
-    options) {
+var mixIn = require('mout/object/mixIn'),
 
-  var handlers = options.handlers || {},
-    views = options.views || {},
-    timeout = options.timeout || 3 * 1000,
-    shutdown = options.shutdown,
+  defaults = {
+    handlers: {},
+    views: {},
+    timeout: 3 * 1000,
+    server: undefined,
+    shutdown: undefined
+  };
+
+/**
+ * A graceful error handler for Express
+ * applications.
+ * 
+ * @param {object} [options]
+ * 
+ * @param {object} [options.handlers] Custom
+ *        handlers for specific status codes.
+ *
+ * @param {object} [options.views] View files to 
+ *        render in response to specific status 
+ *        codes. Specify a default with
+ *        options.views.default
+ *
+ * @param {number} [options.timeout] Delay 
+ *        between the graceful shutdown
+ *        attempt and the forced shutdown
+ *        timeout.
+ *
+ * @return {function} errorHandler Express error 
+ *         handling middleware.
+ */
+module.exports = function createHandler(options) {
+
+  var o = mixIn({}, defaults, options),
 
     /**
      * In case of an error, wait for a timer to
      * elapse, and then terminate.
      * @param  {Number} status Exit status code.
      */
-    exit = shutdown || function exit(status) {
+    exit = o.shutdown || function exit(status) {
+
       // Give the app time for graceful shutdown.
       setTimeout(function () {
         process.exit(status || 1);
-      }, timeout);
+      }, o.timeout);
+
     };
 
   /**
@@ -25,42 +70,56 @@ module.exports = function createHandler(server,
    * uncaught express errors.
    * For error logging, see 
    * 
-   * @param  {Object}   err 
-   * @param  {Object}   req
-   * @param  {Object}   res
-   * @param  {Function} next
+   * @param  {object}   err 
+   * @param  {object}   req
+   * @param  {object}   res
+   * @param  {function} next
    */
   return function errorHandler(err,
       req, res, next) {
 
-    if (typeof handlers[err.status] ===
+    var defaultView = o.views['default'];
+
+    // If there's a custom handler defined,
+    // use it and return.
+    if (typeof o.handlers[err.status] ===
         'function') {
-      return handlers[err.status](err,
+      return o.handlers[err.status](err,
         req, res, next);
     }
 
-    if (options.views[err.status]) {
-      return res.render(options
-        .views[err.status]);
+    // If there's a custom view defined,
+    // render it and return.
+    if (o.views[err.status]) {
+      return res.render(o.views[err.status],
+        err);
     }
 
+    // If the error is user generated, send
+    // a helpful error message, and don't shut
+    // down.
+    // 
+    // If we shutdown on user errors,
+    // attackers can send malformed requests
+    // for the purpose of creating a Denial 
+    // Of Service (DOS) attack.
     if ((err.status > 399 && err.status < 500) ||
         err.status === 503) {
 
-      // If we shutdown on user errors,
-      // attackers can send malformed requests
-      // with the express purpose of creating a
-      // Denial Of Service (DOS) attack.
-      //
-      // If the user can do something about the
-      // error, send a helpful status message
-      // and don't shut down.
+      if (defaultView) {
+        return res.render(defaultView, err);
+      }
+
       return res.send(err.status);
     }
 
     // For all other errors, deliver a 500
     // error and shut down.
-    res.send(500);
+    if (defaultView) {
+      res.render(defaultView, err);
+    } else {
+      res.send(500);
+    }
 
     // We need to kill the server process so
     // the app can repair itself. Your process 
@@ -69,9 +128,11 @@ module.exports = function createHandler(server,
     // 
     // That can be accomplished with modules
     // like forever, forky, etc...
-    if (server && typeof server.close ===
+    // 
+    // First, try a graceful shutdown:
+    if (o.server && typeof o.server.close ===
         'function') {
-      server.close(function () {
+      o.server.close(function () {
         process.exit(1);
       });
     }

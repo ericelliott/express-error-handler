@@ -24,5 +24,8 @@
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/dilvie/express-error-handler/issues"
+  },
+  "dependencies": {
+    "mout": "~0.7.1"
   }
 }

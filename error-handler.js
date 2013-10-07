@@ -44,8 +44,12 @@ var mixIn = require('mout/object/mixIn'),
  *        attempt and the forced shutdown
  *        timeout.
  *
- * @param {number} [options.server] The app server
+ * @param {object} [options.server] The app server
  *        object for graceful shutdowns.
+ *
+ * @param {function} [options.shutdown] An
+ *        alternative shutdown function if the
+ *        graceful shutdown fails.
  *
  * @return {function} errorHandler Express error 
  *         handling middleware.

@@ -21,6 +21,7 @@ var mixIn = require('mout/object/mixIn'),
     handlers: {},
     views: {},
     timeout: 3 * 1000,
+    exitStatus: 1,
     server: undefined,
     shutdown: undefined
   };
@@ -44,6 +45,9 @@ var mixIn = require('mout/object/mixIn'),
  *        attempt and the forced shutdown
  *        timeout.
  *
+ * @param {number} [options.exitStatus] Custom 
+ *        process exit status code.
+ *
  * @param {object} [options.server] The app server
  *        object for graceful shutdowns.
  *
@@ -63,11 +67,11 @@ module.exports = function createHandler(options) {
      * elapse, and then terminate.
      * @param  {Number} status Exit status code.
      */
-    exit = o.shutdown || function exit(status) {
+    exit = o.shutdown || function exit(o){
 
       // Give the app time for graceful shutdown.
       setTimeout(function () {
-        process.exit(status || 1);
+        process.exit(o.exitStatus);
       }, o.timeout);
 
     };
@@ -140,13 +144,14 @@ module.exports = function createHandler(options) {
     if (o.server && typeof o.server.close ===
         'function') {
       o.server.close(function () {
-        process.exit(1);
+        process.exit(o.exitStatus);
       });
     }
 
     // Just in case the server.close() callback
     // never fires, this will wait for a timeout
-    // and then terminate:
-    exit();
+    // and then terminate. Users can override
+    // this function by passing options.shutdown:
+    exit(o);
   };
 };

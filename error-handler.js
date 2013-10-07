@@ -67,8 +67,8 @@ module.exports = function createHandler(options) {
 
   /**
    * Express error handler to handle any
-   * uncaught express errors.
-   * For error logging, see 
+   * uncaught express errors. For error logging,
+   * see bunyan-request-logger.
    * 
    * @param  {object}   err 
    * @param  {object}   req

@@ -1,9 +1,9 @@
 'use strict';
 
 var express = require('express'),
-  logger = require('../request-logger.js'),
+  logger = require('bunyan-request-logger'),
   noCache = require('connect-cache-control'),
-  errorHandler = require('express-error-handler'),
+  errorHandler = require('../error-handler.js'),
   log = logger(),
   app = express(),
   env = process.env,

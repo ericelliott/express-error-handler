@@ -48,24 +48,14 @@ server.listen(port, function () {
 Here are the parameters you can pass into the `errorHandler()` middleware:
 
 * @param {object} [options]
-* @param {object} [options.handlers] Custom
-*        handlers for specific status codes.
-* @param {object} [options.views] View files to 
-*        render in response to specific status 
-*        codes. Specify a default with
-*        options.views.default
-* @param {number} [options.timeout] Delay 
-*        between the graceful shutdown
-*        attempt and the forced shutdown
-*        timeout.
-* @param {number} [options.exitStatus] Custom 
-*        process exit status code.
-* @param {object} [options.server] The app server
-*        object for graceful shutdowns.
-* @param {function} [options.shutdown] An
-*        alternative shutdown function if the
-*        graceful shutdown fails.
-* @return {function} errorHandler Express error 
-*         handling middleware.
+
+* @param {object} [options.handlers] Custom handlers for specific status codes.
+
+* @param {object} [options.views] View files to render in response to specific status codes. Specify a default with `options.views.default`
+* @param {number} [options.timeout] Delay between the graceful shutdown attempt and the forced shutdown timeout.
+* @param {number} [options.exitStatus] Custom process exit status code.
+* @param {object} [options.server] The app server object for graceful shutdowns.
+* @param {function} [options.shutdown] An alternative shutdown function if the graceful shutdown fails.
+* @return {function} errorHandler Express error handling middleware.
 
 See the tests for more examples.

@@ -14,6 +14,15 @@ app.get('/error', function createError(req,
   next(err);
 });
 
+// Route that triggers a sample error with
+// static file handler:
+app.get('/static', function createError(req,
+    res, next) {
+  var err = new Error('Sample error');
+  err.status = 505;
+  next(err);
+});
+
 // Create the server object that we can pass
 // in to the error handler:
 server = http.createServer(app);
@@ -28,7 +37,12 @@ app.use(function (err, req, res, next) {
 // down the server. Pass in the server object
 // so the error handler can shut it down
 // gracefully:
-app.use( errorHandler({server: server}) );
+app.use( errorHandler({
+  static: {
+    '505': './test/test-static.html'
+  },
+  server: server
+}) );
 
 server.listen(port, function () {
   console.log('Listening on port ' + port);

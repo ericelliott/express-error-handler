@@ -16,10 +16,13 @@
 'use strict';
 
 var mixIn = require('mout/object/mixIn'),
+  path = require('path'),
+  fs = require('fs'),
 
   defaults = {
     handlers: {},
     views: {},
+    static: {},
     timeout: 3 * 1000,
     exitStatus: 1,
     server: undefined,
@@ -89,7 +92,9 @@ module.exports = function createHandler(options) {
   return function errorHandler(err,
       req, res, next) {
 
-    var defaultView = o.views['default'];
+    var defaultView = o.views['default'],
+      view = o.views[err.status],
+      staticFile = o.static[err.status];
 
     // If there's a custom handler defined,
     // use it and return.
@@ -101,9 +106,19 @@ module.exports = function createHandler(options) {
 
     // If there's a custom view defined,
     // render it and return.
-    if (o.views[err.status]) {
-      return res.render(o.views[err.status],
+    if (view) {
+      return res.render(view,
         err);
+    }
+
+    // If there's a custom static file defined,
+    // render it and return.
+    if (staticFile) {
+      return (function () {
+        var filePath = path.resolve(staticFile),
+          stream = fs.createReadStream(filePath);
+        stream.pipe(res);
+      }());
     }
 
     // If the error is user generated, send

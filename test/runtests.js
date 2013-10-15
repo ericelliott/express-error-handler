@@ -2,6 +2,8 @@
 
 var test = require('tape'),
   createHandler = require('../error-handler.js'),
+  through = require('through'),
+
   testError = new Error('Test error'),
   testReq = function () { return {}; },
   testRes = function () {
@@ -141,4 +143,40 @@ test('Custom timeout',
     });
 
   handler(testError, testReq(), testRes(), testNext);
+});
+
+test('Static file', function (t) {
+  var
+    buff = [],
+    sample = 'foo',
+    output,
+
+    shutdown = function shutdown() {},
+
+    e = (function () {
+      var err = new Error();
+      err.status = 505;
+      return err;
+    }()),
+
+    handler = createHandler({
+      static: {
+        '505': './test/test-static.html'
+      },
+      shutdown: shutdown
+    }),
+
+    res = through(function (data) {
+      buff.push(data);
+    }, function () {
+      output = Buffer.concat(buff).toString('utf8')
+        .trim();
+
+      t.strictEqual(output, sample,
+        'Should send static file.');
+
+      t.end();
+    });
+
+  handler(e, testReq(), res, testNext);
 });

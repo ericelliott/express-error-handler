@@ -1,6 +1,6 @@
 {
   "name": "express-error-handler",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "A graceful error handler for Express applications.",
   "main": "error-handler.js",
   "scripts": {
@@ -33,6 +33,7 @@
     "grunt": "~0.4.1",
     "grunt-contrib-jshint": "~0.6.4",
     "bunyan-request-logger": "~0.1.1",
-    "connect-cache-control": "~0.1.0"
+    "connect-cache-control": "~0.1.0",
+    "through": "~2.3.4"
   }
 }

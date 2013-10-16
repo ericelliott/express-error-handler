@@ -41,7 +41,12 @@ var mixIn = require('mout/object/mixIn'),
  * @param {object} [options.views] View files to 
  *        render in response to specific status 
  *        codes. Specify a default with
- *        options.views.default
+ *        options.views.default.
+ *
+ * @param {object} [options.static] Static files to 
+ *        send in response to specific status 
+ *        codes. Specify a default with
+ *        options.static.default.
  *
  * @param {number} [options.timeout] Delay 
  *        between the graceful shutdown
@@ -93,8 +98,25 @@ module.exports = function createHandler(options) {
       req, res, next) {
 
     var defaultView = o.views['default'],
+      defaultStatic = o.static['default'],
       view = o.views[err.status],
-      staticFile = o.static[err.status];
+      staticFile = o.static[err.status],
+
+      renderDefault = function renderDefault() {
+        if (defaultView) {
+          return res.render(defaultView, err);
+        }
+
+        if (defaultStatic) {
+          return (function () {
+            var filePath = path.resolve(defaultStatic),
+              stream = fs.createReadStream(filePath);
+            stream.pipe(res);
+          }());
+        }
+
+        return res.send(500);
+      };
 
     // If there's a custom handler defined,
     // use it and return.
@@ -132,20 +154,14 @@ module.exports = function createHandler(options) {
     if ((err.status > 399 && err.status < 500) ||
         err.status === 503) {
 
-      if (defaultView) {
-        return res.render(defaultView, err);
-      }
+      renderDefault();
 
       return res.send(err.status);
     }
 
     // For all other errors, deliver a 500
     // error and shut down.
-    if (defaultView) {
-      res.render(defaultView, err);
-    } else {
-      res.send(500);
-    }
+    renderDefault();
 
     // We need to kill the server process so
     // the app can repair itself. Your process 

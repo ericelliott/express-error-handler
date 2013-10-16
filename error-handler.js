@@ -102,7 +102,7 @@ module.exports = function createHandler(options) {
       view = o.views[err.status],
       staticFile = o.static[err.status],
 
-      renderDefault = function renderDefault() {
+      renderDefault = function renderDefault(status) {
         if (defaultView) {
           return res.render(defaultView, err);
         }
@@ -115,7 +115,7 @@ module.exports = function createHandler(options) {
           }());
         }
 
-        return res.send(500);
+        return res.send(status);
       };
 
     // If there's a custom handler defined,
@@ -154,14 +154,12 @@ module.exports = function createHandler(options) {
     if ((err.status > 399 && err.status < 500) ||
         err.status === 503) {
 
-      renderDefault();
-
-      return res.send(err.status);
+      return renderDefault(err.status);
     }
 
     // For all other errors, deliver a 500
     // error and shut down.
-    renderDefault();
+    renderDefault(500);
 
     // We need to kill the server process so
     // the app can repair itself. Your process 

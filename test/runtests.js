@@ -90,7 +90,9 @@ test('Custom views', function (t) {
 test('Error with status default behavior', 
     function (t) {
 
-  var shutdown = function shutdown() {},
+  var shutdown = function shutdown() {
+      t.fail('shutdown should not be called.');
+    },
     e = new Error(),
     handler = createHandler({
       shutdown: shutdown

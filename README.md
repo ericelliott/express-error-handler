@@ -52,6 +52,7 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 * @param {object} [options.handlers] Custom handlers for specific status codes.
 
 * @param {object} [options.views] View files to render in response to specific status codes. Specify a default with `options.views.default`
+* @param {object} [options.static] Static files to send in response to specific status codes. Specify a default with options.static.default.
 * @param {number} [options.timeout] Delay between the graceful shutdown attempt and the forced shutdown timeout.
 * @param {number} [options.exitStatus] Custom process exit status code.
 * @param {object} [options.server] The app server object for graceful shutdowns.

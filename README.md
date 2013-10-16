@@ -60,3 +60,17 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 * @return {function} errorHandler Express error handling middleware.
 
 See the tests for more examples.
+
+
+## errorHandler.clientError()
+
+Return true if the error status represents a client error that should not trigger a restart.
+
+* @param  {number} status
+* @return {boolean}
+
+
+### Example
+
+errorHandler.clientError(404); // returns true
+errorHandler.clientError(500); // returns false

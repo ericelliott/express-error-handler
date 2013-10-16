@@ -19,6 +19,51 @@ var mixIn = require('mout/object/mixIn'),
   path = require('path'),
   fs = require('fs'),
 
+  /**
+   * Return true if the error status represents
+   * a client error that should not trigger a
+   * restart.
+   * 
+   * @param  {number} status
+   * @return {boolean}
+   */
+  clientError = function clientError(status) {
+    return (status >= 400 && status <= 499);
+  },
+
+  /**
+   * Attempt a graceful shutdown, and then time
+   * out if the connections fail to drain in time.
+   * 
+   * @param  {object} o options
+   * @param  {object} o.server server object
+   * @param  {object} o.timeout timeout in ms
+   * @param  {function} exit - force kill function
+   */
+  close = function close(o, exit) {
+    // We need to kill the server process so
+    // the app can repair itself. Your process 
+    // should be monitored in production and
+    // restarted when it shuts down.
+    // 
+    // That can be accomplished with modules
+    // like forever, forky, etc...
+    // 
+    // First, try a graceful shutdown:
+    if (o.server && typeof o.server.close ===
+        'function') {
+      o.server.close(function () {
+        process.exit(o.exitStatus);
+      });
+    }
+
+    // Just in case the server.close() callback
+    // never fires, this will wait for a timeout
+    // and then terminate. Users can override
+    // this function by passing options.shutdown:
+    exit(o);
+  },
+
   defaults = {
     handlers: {},
     views: {},
@@ -27,7 +72,8 @@ var mixIn = require('mout/object/mixIn'),
     exitStatus: 1,
     server: undefined,
     shutdown: undefined
-  };
+  },
+  createHandler;
 
 /**
  * A graceful error handler for Express
@@ -66,7 +112,7 @@ var mixIn = require('mout/object/mixIn'),
  * @return {function} errorHandler Express error 
  *         handling middleware.
  */
-module.exports = function createHandler(options) {
+createHandler = function createHandler(options) {
 
   var o = mixIn({}, defaults, options),
 
@@ -99,8 +145,9 @@ module.exports = function createHandler(options) {
 
     var defaultView = o.views['default'],
       defaultStatic = o.static['default'],
-      view = o.views[err.status],
-      staticFile = o.static[err.status],
+      status = err.status,
+      view = o.views[status],
+      staticFile = o.static[status],
 
       renderDefault = function renderDefault(status) {
         if (defaultView) {
@@ -116,31 +163,44 @@ module.exports = function createHandler(options) {
         }
 
         return res.send(status);
+      },
+
+      resumeOrClose = function resumeOrClose(status) {
+        if (!clientError(status)) {
+          return close(o, exit);
+        }
       };
+
 
     // If there's a custom handler defined,
     // use it and return.
-    if (typeof o.handlers[err.status] ===
+    if (typeof o.handlers[status] ===
         'function') {
-      return o.handlers[err.status](err,
+      o.handlers[status](err,
         req, res, next);
+
+      return resumeOrClose(status);
     }
 
     // If there's a custom view defined,
-    // render it and return.
+    // render it.
     if (view) {
-      return res.render(view,
+      res.render(view,
         err);
+
+      return resumeOrClose(status);
     }
 
     // If there's a custom static file defined,
-    // render it and return.
+    // render it.
     if (staticFile) {
-      return (function () {
+      (function () {
         var filePath = path.resolve(staticFile),
           stream = fs.createReadStream(filePath);
         stream.pipe(res);
       }());
+
+      return resumeOrClose(status);
     }
 
     // If the error is user generated, send
@@ -151,36 +211,19 @@ module.exports = function createHandler(options) {
     // attackers can send malformed requests
     // for the purpose of creating a Denial 
     // Of Service (DOS) attack.
-    if ((err.status > 399 && err.status < 500) ||
-        err.status === 503) {
-
-      return renderDefault(err.status);
+    if (clientError(status)) {
+      return renderDefault(status);
     }
 
     // For all other errors, deliver a 500
     // error and shut down.
     renderDefault(500);
 
-    // We need to kill the server process so
-    // the app can repair itself. Your process 
-    // should be monitored in production and
-    // restarted when it shuts down.
-    // 
-    // That can be accomplished with modules
-    // like forever, forky, etc...
-    // 
-    // First, try a graceful shutdown:
-    if (o.server && typeof o.server.close ===
-        'function') {
-      o.server.close(function () {
-        process.exit(o.exitStatus);
-      });
-    }
-
-    // Just in case the server.close() callback
-    // never fires, this will wait for a timeout
-    // and then terminate. Users can override
-    // this function by passing options.shutdown:
-    exit(o);
+    close(o, exit);
   };
 };
+
+
+createHandler.clientError = clientError;
+
+module.exports = createHandler;

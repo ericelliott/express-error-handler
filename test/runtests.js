@@ -182,3 +182,20 @@ test('Static file', function (t) {
 
   handler(e, testReq(), res, testNext);
 });
+
+test('.clientError()', function (t) {
+  var
+    serverPass = [399, 500].every(function (err) {
+      return !createHandler.clientError(err);
+    }),
+    clientPass = [400, 401, 499].every(function(err) {
+      return createHandler.clientError(err);
+    });
+
+  t.ok(serverPass,
+    'Non client errors should be correctly identified.');
+  t.ok(clientPass,
+    'Client errors should be correctly identified.');
+
+  t.end();
+});

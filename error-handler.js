@@ -64,6 +64,12 @@ var mixIn = require('mout/object/mixIn'),
     exit(o);
   },
 
+  sendFile = function sendFile (staticFile, res) {
+    var filePath = path.resolve(staticFile),
+      stream = fs.createReadStream(filePath);
+    stream.pipe(res);
+  },
+
   defaults = {
     handlers: {},
     views: {},
@@ -146,6 +152,7 @@ createHandler = function createHandler(options) {
     var defaultView = o.views['default'],
       defaultStatic = o.static['default'],
       status = err.status,
+      handler = o.handlers[status],
       view = o.views[status],
       staticFile = o.static[status],
 
@@ -174,10 +181,9 @@ createHandler = function createHandler(options) {
 
     // If there's a custom handler defined,
     // use it and return.
-    if (typeof o.handlers[status] ===
+    if (typeof handler ===
         'function') {
-      o.handlers[status](err,
-        req, res, next);
+      handler(err, req, res, next);
 
       return resumeOrClose(status);
     }
@@ -194,12 +200,7 @@ createHandler = function createHandler(options) {
     // If there's a custom static file defined,
     // render it.
     if (staticFile) {
-      (function () {
-        var filePath = path.resolve(staticFile),
-          stream = fs.createReadStream(filePath);
-        stream.pipe(res);
-      }());
-
+      sendFile(staticFile, res);
       return resumeOrClose(status);
     }
 

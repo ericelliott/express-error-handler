@@ -72,5 +72,7 @@ Return true if the error status represents a client error that should not trigge
 
 ### Example
 
+```js
 errorHandler.clientError(404); // returns true
 errorHandler.clientError(500); // returns false
+```

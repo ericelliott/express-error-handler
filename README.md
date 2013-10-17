@@ -76,3 +76,7 @@ Return true if the error status represents a client error that should not trigge
 errorHandler.clientError(404); // returns true
 errorHandler.clientError(500); // returns false
 ```
+
+## Thanks
+
+Thanks to [Samuel Reed](https://github.com/strml) for helpful suggestions.

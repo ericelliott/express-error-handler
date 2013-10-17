@@ -125,7 +125,9 @@ createHandler = function createHandler(options) {
     /**
      * In case of an error, wait for a timer to
      * elapse, and then terminate.
-     * @param  {Number} status Exit status code.
+     * @param {object} options
+     * @param {number} o.exitStatus
+     * @param {number} o.timeout
      */
     exit = o.shutdown || function exit(o){
 

@@ -199,3 +199,38 @@ test('.clientError()', function (t) {
 
   t.end();
 });
+
+test('Default static file', function (t) {
+  var shutdown = function shutdown() {},
+
+    buff = [],
+    sample = 'foo',
+    output,
+
+    e = (function () {
+      var err = new Error();
+      err.status = 505;
+      return err;
+    }()),
+
+    handler = createHandler({
+      static: {
+        'default': './test/test-static.html'
+      },
+      shutdown: shutdown
+    }),
+
+    res = through(function (data) {
+      buff.push(data);
+    }, function () {
+      output = Buffer.concat(buff).toString('utf8')
+        .trim();
+
+      t.strictEqual(output, sample,
+        'Should send static file.');
+
+      t.end();
+    });
+
+  handler(e, testReq(), res, testNext);
+});

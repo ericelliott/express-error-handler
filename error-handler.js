@@ -95,8 +95,8 @@ var mixIn = require('mout/object/mixIn'),
  *        codes. Specify a default with
  *        options.views.default.
  *
- * @param {object} [options.static] Static files to 
- *        send in response to specific status 
+ * @param {object} [options.static] Static files 
+ *        to send in response to specific status 
  *        codes. Specify a default with
  *        options.static.default.
  *
@@ -146,8 +146,8 @@ createHandler = function createHandler(options) {
    * @param  {object}   res
    * @param  {function} next
    */
-  return function errorHandler(err,
-      req, res, next) {
+  return function errorHandler(err, req,
+      res, next) {
 
     var defaultView = o.views['default'],
       defaultStatic = o.static['default'],
@@ -156,23 +156,21 @@ createHandler = function createHandler(options) {
       view = o.views[status],
       staticFile = o.static[status],
 
-      renderDefault = function renderDefault(status) {
+      renderDefault = function
+          renderDefault(status) {
         if (defaultView) {
           return res.render(defaultView, err);
         }
 
         if (defaultStatic) {
-          return (function () {
-            var filePath = path.resolve(defaultStatic),
-              stream = fs.createReadStream(filePath);
-            stream.pipe(res);
-          }());
+          return sendFile(defaultStatic, res);
         }
 
         return res.send(status);
       },
 
-      resumeOrClose = function resumeOrClose(status) {
+      resumeOrClose = function
+          resumeOrClose(status) {
         if (!clientError(status)) {
           return close(o, exit);
         }
@@ -181,8 +179,7 @@ createHandler = function createHandler(options) {
 
     // If there's a custom handler defined,
     // use it and return.
-    if (typeof handler ===
-        'function') {
+    if (typeof handler === 'function') {
       handler(err, req, res, next);
 
       return resumeOrClose(status);
@@ -191,8 +188,7 @@ createHandler = function createHandler(options) {
     // If there's a custom view defined,
     // render it.
     if (view) {
-      res.render(view,
-        err);
+      res.render(view, err);
 
       return resumeOrClose(status);
     }

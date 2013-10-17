@@ -183,7 +183,6 @@ createHandler = function createHandler(options) {
     // use it and return.
     if (typeof handler === 'function') {
       handler(err, req, res, next);
-
       return resumeOrClose(status);
     }
 
@@ -191,7 +190,6 @@ createHandler = function createHandler(options) {
     // render it.
     if (view) {
       res.render(view, err);
-
       return resumeOrClose(status);
     }
 

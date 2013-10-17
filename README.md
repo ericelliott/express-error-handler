@@ -79,4 +79,5 @@ errorHandler.clientError(500); // returns false
 
 ## Thanks
 
-Thanks to [Samuel Reed](https://github.com/strml) for helpful suggestions.
+* [Nam Nguyen[(https://github.com/gdbtek) for bringing the Express DOS exploit to my attention.
+* [Samuel Reed](https://github.com/strml) for helpful suggestions.

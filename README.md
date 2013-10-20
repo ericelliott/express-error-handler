@@ -95,4 +95,5 @@ Take an error status and return a route that sends an error with the appropriate
 
 ## Thanks
 
-Thanks to [Samuel Reed](https://github.com/strml) for helpful suggestions.
+* [Nam Nguyen](https://github.com/gdbtek) for bringing the Express DOS exploit to my attention.
+* [Samuel Reed](https://github.com/strml) for helpful suggestions.

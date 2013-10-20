@@ -18,6 +18,7 @@
 var mixIn = require('mout/object/mixIn'),
   path = require('path'),
   fs = require('fs'),
+  statusCodes = require('http').STATUS_CODES,
 
   /**
    * Return true if the error status represents
@@ -27,7 +28,7 @@ var mixIn = require('mout/object/mixIn'),
    * @param  {number} status
    * @return {boolean}
    */
-  clientError = function clientError(status) {
+  isClientError = function isClientError(status) {
     return (status >= 400 && status <= 499);
   },
 
@@ -62,6 +63,28 @@ var mixIn = require('mout/object/mixIn'),
     // and then terminate. Users can override
     // this function by passing options.shutdown:
     exit(o);
+  },
+
+  /**
+   * Take an error status and return a route that
+   * sends an error with the appropriate status
+   * and message to an error handler via
+   * `next(err)`.
+   * 
+   * @param  {number} status
+   * @param  {string} message
+   * @return {function} Express route handler
+   */
+  httpError = function httpError (status, message) {
+    var err = new Error();
+    err.status = status;
+    err.message = message ||
+      statusCodes[status] ||
+      'Internal server error';
+
+    return function httpErr(req, res, next) {
+      next(err);
+    };
   },
 
   sendFile = function sendFile (staticFile, res) {
@@ -167,13 +190,12 @@ createHandler = function createHandler(options) {
         if (defaultStatic) {
           return sendFile(defaultStatic, res);
         }
-
         return res.send(status);
       },
 
       resumeOrClose = function
           resumeOrClose(status) {
-        if (!clientError(status)) {
+        if (!isClientError(status)) {
           return close(o, exit);
         }
       };
@@ -208,7 +230,7 @@ createHandler = function createHandler(options) {
     // attackers can send malformed requests
     // for the purpose of creating a Denial 
     // Of Service (DOS) attack.
-    if (clientError(status)) {
+    if (isClientError(status)) {
       return renderDefault(status);
     }
 
@@ -220,7 +242,25 @@ createHandler = function createHandler(options) {
   };
 };
 
+createHandler.isClientError = isClientError;
+createHandler.clientError = function () {
+  var args = [].slice.call(arguments);
 
-createHandler.clientError = clientError;
+  console.log('WARNING: .clientError() is ' +
+    'deprecated. Use isClientError() instead.');
+
+  return this.isClientError.apply(this, args);
+};
+
+createHandler.restify = function restify(options) {
+  var handler = createHandler(options);
+  return function restifyHandler(req, res,
+      route, err) {
+    handler(err, req, res);
+  };
+};
+
+// HTTP error generating route.
+createHandler.httpError = httpError;
 
 module.exports = createHandler;

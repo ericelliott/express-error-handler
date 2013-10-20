@@ -43,7 +43,7 @@ server.listen(port, function () {
 });
 ```
 
-## Configuration
+## Configuration errorHandler(options)
 
 Here are the parameters you can pass into the `errorHandler()` middleware:
 
@@ -62,7 +62,7 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 See the tests for more examples.
 
 
-## errorHandler.clientError()
+## errorHandler.isClientError(status)
 
 Return true if the error status represents a client error that should not trigger a restart.
 
@@ -73,8 +73,24 @@ Return true if the error status represents a client error that should not trigge
 ### Example
 
 ```js
-errorHandler.clientError(404); // returns true
-errorHandler.clientError(500); // returns false
+errorHandler.isClientError(404); // returns true
+errorHandler.isClientError(500); // returns false
+```
+
+
+## errorHandler.httpError(status, [message])
+
+Take an error status and return a route that sends an error with the appropriate status and message to an error handler via `next(err)`.
+
+* @param  {number} status
+* @param  {string} message
+* @return {function} Express route handler
+
+```js
+* // Define supported routes
+* app.get( '/foo', handleFoo() );
+* // 405 for unsupported methods.
+* app.all( '/foo', createHandler.err(405) );
 ```
 
 ## Thanks

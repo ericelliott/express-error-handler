@@ -183,13 +183,13 @@ test('Static file', function (t) {
   handler(e, testReq(), res, testNext);
 });
 
-test('.clientError()', function (t) {
+test('.isClientError()', function (t) {
   var
     serverPass = [399, 500].every(function (err) {
-      return !createHandler.clientError(err);
+      return !createHandler.isClientError(err);
     }),
     clientPass = [400, 401, 499].every(function(err) {
-      return createHandler.clientError(err);
+      return createHandler.isClientError(err);
     });
 
   t.ok(serverPass,
@@ -233,4 +233,31 @@ test('Default static file', function (t) {
     });
 
   handler(e, testReq(), res, testNext);
+});
+
+test('.restify()', function (t) {
+  var route,
+    shutdown = function shutdown() {
+      t.pass('Should return restify handler.');
+      t.end();
+    },
+
+    handler = createHandler
+      .restify({shutdown: shutdown});
+
+  // Restify uses a different signature:
+  handler(testReq(), testRes(), route, testError);
+});
+
+test('.create() http error handler', function (t) {
+  var next = function (err) {
+      t.equal(err.status, 405,
+        'Status message should be set on error.');
+      t.equal(err.message, 'Method Not Allowed',
+        'Should set message correctly.');
+      t.end();
+    },
+    handler = createHandler.httpError(405);
+
+  handler(null, null, next);
 });

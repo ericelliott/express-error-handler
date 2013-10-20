@@ -3,8 +3,8 @@
 module.exports = function(grunt) {
   grunt.initConfig({
     jshint: {
-      all: ['./test/**/*.js', './gruntfile.js',
-        './error-handler.js'],
+      all: ['./gruntfile.js', './test/*.js',
+        './examples/*.js', './error-handler.js'],
       options: {
         curly: true,
         eqeqeq: true,

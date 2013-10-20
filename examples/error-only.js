@@ -1,3 +1,5 @@
+'use strict';
+
 var express = require('express'),
   errorHandler = require('../error-handler.js'),
   app = express(),

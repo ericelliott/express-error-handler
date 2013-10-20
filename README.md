@@ -90,7 +90,7 @@ Take an error status and return a route that sends an error with the appropriate
 * // Define supported routes
 * app.get( '/foo', handleFoo() );
 * // 405 for unsupported methods.
-* app.all( '/foo', createHandler.err(405) );
+* app.all( '/foo', createHandler.httpError(405) );
 ```
 
 ## Thanks

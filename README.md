@@ -61,9 +61,10 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 
 ### Examples:
 
-```js
 `express-error-handler` lets you specify custom templates, static pages, or error handlers for your errors. It also does other useful error-handling things that every app should implement, like protect against 4xx error DOS attacks, and graceful shutdown on unrecoverable errors. Here's how you do what you're asking for:
 
+
+```js
     var errorHandler = require('express-error-handler'),
       handler = errorHandler({
         handlers: {

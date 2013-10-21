@@ -85,6 +85,7 @@ app.use( errorHandler.httpError(404) );
 app.use( handler );
 ```
 
+[More examples](https://github.com/dilvie/express-error-handler/tree/master/examples) are available in the examples folder.
 
 ## errorHandler.isClientError(status)
 

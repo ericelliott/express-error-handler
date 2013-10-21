@@ -323,7 +323,7 @@ test('JSON with serializer',
   handler(e, testReq(), {
     send: function send(status, obj) {
         t.equal(obj.links[0].self, '/foo',
-          'Should be able to define a custom' +
+          'Should be able to define a custom ' +
           'serializer for error responses.');
         t.end();
     },

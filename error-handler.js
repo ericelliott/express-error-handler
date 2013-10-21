@@ -196,12 +196,6 @@ createHandler = function createHandler(options) {
           return sendFile(defaultStatic, res);
         }
         return res.format({
-          text: function () {
-            res.send(status);
-          },
-          html: function () {
-            res.send(status);
-          },
           json: function () {
             var body = mixIn({}, err, {
                 status: status,
@@ -212,6 +206,12 @@ createHandler = function createHandler(options) {
               body;
 
             res.send(status, body);
+          },
+          text: function () {
+            res.send(status);
+          },
+          html: function () {
+            res.send(status);
           }
         });
       },

@@ -50,7 +50,6 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 * @param {object} [options]
 
 * @param {object} [options.handlers] Custom handlers for specific status codes.
-
 * @param {object} [options.views] View files to render in response to specific status codes. Specify a default with `options.views.default`
 * @param {object} [options.static] Static files to send in response to specific status codes. Specify a default with options.static.default.
 * @param {number} [options.timeout] Delay between the graceful shutdown attempt and the forced shutdown timeout.
@@ -60,7 +59,31 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 * @param {function} serializer a function to customize the JSON error object. Usage: serializer(err) return errObj
 * @return {function} errorHandler Express error handling middleware.
 
-See the tests for more examples.
+### Examples:
+
+```js
+var express = require('express'),
+  errorHandler = require('express-error-handler'),
+  http = require('http'),
+  app = express(),
+  server = http.createServer(app),
+  handler = errorHandler({
+    // Views and handlers work pretty much
+    // the same way as static:
+    static: {
+      '404': 'path/to/static/404.html',
+    },
+    server: server // for graceful shutdowns
+  });
+
+// After all your routes...
+// Pass a 404 into next(err)
+app.use( errorHandler.httpError(404) );
+
+// Handle all unhandled errors.
+// Shut down gracefully, if required.
+app.use( handler );
+```
 
 
 ## errorHandler.isClientError(status)

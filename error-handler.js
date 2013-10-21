@@ -100,7 +100,8 @@ var mixIn = require('mout/object/mixIn'),
     timeout: 3 * 1000,
     exitStatus: 1,
     server: undefined,
-    shutdown: undefined
+    shutdown: undefined,
+    serializer: undefined
   },
   createHandler;
 
@@ -137,6 +138,10 @@ var mixIn = require('mout/object/mixIn'),
  * @param {function} [options.shutdown] An
  *        alternative shutdown function if the
  *        graceful shutdown fails.
+ *
+ * @param {function} serializer a function to
+ *        customize the JSON error object.
+ *        Usage: serializer(err) return errObj
  *
  * @return {function} errorHandler Express error 
  *         handling middleware.
@@ -190,7 +195,25 @@ createHandler = function createHandler(options) {
         if (defaultStatic) {
           return sendFile(defaultStatic, res);
         }
-        return res.send(status);
+        return res.format({
+          text: function () {
+            res.send(status);
+          },
+          html: function () {
+            res.send(status);
+          },
+          json: function () {
+            var body = mixIn({}, err, {
+                status: status,
+                message: statusCodes[status]
+              });
+            body = (o.serializer) ?
+              o.serializer(body) :
+              body;
+
+            res.send(status, body);
+          }
+        });
       },
 
       resumeOrClose = function

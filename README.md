@@ -57,6 +57,7 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 * @param {number} [options.exitStatus] Custom process exit status code.
 * @param {object} [options.server] The app server object for graceful shutdowns.
 * @param {function} [options.shutdown] An alternative shutdown function if the graceful shutdown fails.
+* @param {function} serializer a function to customize the JSON error object. Usage: serializer(err) return errObj
 * @return {function} errorHandler Express error handling middleware.
 
 See the tests for more examples.

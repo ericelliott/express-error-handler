@@ -4,11 +4,16 @@ var test = require('tape'),
   createHandler = require('../error-handler.js'),
   through = require('through'),
 
+  format = function format (types) {
+    return types['text']();
+  },
+
   testError = new Error('Test error'),
   testReq = function () { return {}; },
   testRes = function () {
     return {
-      send: function send() {}
+      send: function send() {},
+      format: format
     };
   },
   testNext = function () {};
@@ -101,13 +106,14 @@ test('Error with status default behavior',
   e.status = 404;
 
   handler(e, testReq(), {
-    send: function send(status) {
+      send: function send(status) {
         t.equal(status, 404,
           'res.send() should be called ' + 
           'with error status.');
         t.end();
-      }
-    }, testNext);
+      },
+      format: format
+  }, testNext);
 });
 
 test('Default error status for non-user error', 
@@ -127,8 +133,9 @@ test('Default error status for non-user error',
           'res.send() should be called ' + 
           'with default status.');
         t.end();
-      }
-    }, testNext);
+    },
+    format: format
+  }, testNext);
 });
 
 test('Custom timeout', 
@@ -260,4 +267,68 @@ test('.create() http error handler', function (t) {
     handler = createHandler.httpError(405);
 
   handler(null, null, next);
+});
+
+test('JSON error format', 
+    function (t) {
+
+  var shutdown = function shutdown() {},
+    e = new Error(),
+    handler = createHandler({
+      shutdown: shutdown
+    });
+
+  e.status = 500;
+
+  handler(e, testReq(), {
+    send: function send(status, obj) {
+        t.equal(obj.status, 500,
+          'res.send() should be called ' + 
+          'with status code as first param.');
+        t.equal(obj.status, 500,
+          'res.send() should be called ' + 
+          'with error status on response body.');
+        t.equal(obj.message, 'Internal Server Error',
+          'res.send() should be called ' + 
+          'error message on response body.');
+        t.end();
+    },
+    format: function format (types) {
+      return types['json']();
+    }
+  }, testNext);
+});
+
+test('JSON with serializer', 
+    function (t) {
+
+  var shutdown = function shutdown() {},
+    e = new Error(),
+    handler = createHandler({
+      shutdown: shutdown,
+      serializer: function (body) {
+        return {
+          status: body.status,
+          message: body.message,
+          links: [
+            {self: body.route}
+          ]
+        };
+      }
+    });
+
+  e.status = 500;
+  e.route = '/foo';
+
+  handler(e, testReq(), {
+    send: function send(status, obj) {
+        t.equal(obj.links[0].self, '/foo',
+          'Should be able to define a custom' +
+          'serializer for error responses.');
+        t.end();
+    },
+    format: function format (types) {
+      return types['json']();
+    }
+  }, testNext);
 });

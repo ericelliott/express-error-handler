@@ -62,27 +62,43 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 ### Examples:
 
 ```js
-var express = require('express'),
-  errorHandler = require('express-error-handler'),
-  http = require('http'),
-  app = express(),
-  server = http.createServer(app),
-  handler = errorHandler({
-    // Views and handlers work pretty much
-    // the same way as static:
-    static: {
-      '404': 'path/to/static/404.html',
-    },
-    server: server // for graceful shutdowns
-  });
+`express-error-handler` lets you specify custom templates, static pages, or error handlers for your errors. It also does other useful error-handling things that every app should implement, like protect against 4xx error DOS attacks, and graceful shutdown on unrecoverable errors. Here's how you do what you're asking for:
 
-// After all your routes...
-// Pass a 404 into next(err)
-app.use( errorHandler.httpError(404) );
+    var errorHandler = require('express-error-handler'),
+      handler = errorHandler({
+        handlers: {
+          '404': function err404() {
+            // do some custom thing here...
+          }
+        }
+      });
 
-// Handle all unhandled errors.
-// Shut down gracefully, if required.
-app.use( handler );
+    // After all your routes...
+    // Pass a 404 into next(err)
+    app.use( errorHandler.httpError(404) );
+
+    // Handle all unhandled errors:
+    app.use( handler );
+
+Or for a static page:
+
+      handler = errorHandler({
+        static: {
+          '404': function err404() {
+            // do some custom thing here...
+          }
+        }
+      });
+
+Or for a custom view:
+
+      handler = errorHandler({
+        views: {
+          '404': function err404() {
+            // do some custom thing here...
+          }
+        }
+      });
 ```
 
 [More examples](https://github.com/dilvie/express-error-handler/tree/master/examples) are available in the examples folder.

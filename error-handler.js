@@ -187,7 +187,10 @@ createHandler = function createHandler(options) {
       staticFile = o.static[status],
 
       renderDefault = function
-          renderDefault(status) {
+          renderDefault(statusCode) {
+
+        res.statusCode = statusCode;
+
         if (defaultView) {
           return res.render(defaultView, err);
         }
@@ -198,20 +201,21 @@ createHandler = function createHandler(options) {
         return res.format({
           json: function () {
             var body = mixIn({}, err, {
-                status: status,
-                message: statusCodes[status]
+                status: statusCode,
+                message: err.message ||
+                  statusCodes[statusCode]
               });
             body = (o.serializer) ?
               o.serializer(body) :
               body;
 
-            res.send(status, body);
+            res.send(statusCode, body);
           },
           text: function () {
-            res.send(status);
+            res.send(statusCode);
           },
           html: function () {
-            res.send(status);
+            res.send(statusCode);
           }
         });
       },

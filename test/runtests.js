@@ -312,7 +312,7 @@ test('JSON error format',
           'with error status on response body.');
         t.equal(obj.message, 'Internal Server Error',
           'res.send() should be called ' + 
-          'error message on response body.');
+          'with error message on response body.');
         t.end();
     },
     format: function format (types) {
@@ -320,6 +320,32 @@ test('JSON error format',
     }
   }, testNext);
 });
+
+test('JSON with custom error message', 
+    function (t) {
+
+  var shutdown = function shutdown() {},
+    e = new Error(),
+    handler = createHandler({
+      shutdown: shutdown
+    });
+
+  e.status = 420;
+  e.message = 'half baked';
+
+  handler(e, testReq(), {
+    send: function send(status, obj) {
+        t.equal(obj.message, 'half baked',
+          'res.send() should be called ' + 
+          'with custom error message.');
+        t.end();
+    },
+    format: function format (types) {
+      return types['json']();
+    }
+  }, testNext);
+});
+
 
 test('JSON with serializer', 
     function (t) {

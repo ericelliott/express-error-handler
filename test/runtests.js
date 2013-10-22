@@ -49,7 +49,7 @@ test('Custom exit status', function (t) {
       testNext );
 });
 
-test('Custom exit status', function (t) {
+test('Custom handler', function (t) {
   var shutdown = function shutdown() {},
     e = new Error(),
 
@@ -67,6 +67,28 @@ test('Custom exit status', function (t) {
   e.status = 404;
 
   handler( e, testReq(), testRes(),
+      testNext );
+});
+
+test('Missing error status', function (t) {
+  var shutdown = function shutdown() {},
+    e = new Error(),
+
+    handler = createHandler({
+      shutdown: shutdown,
+      handlers: {
+        '404': function err404() {
+          t.pass('Should get status from ' +
+            'res.statusCode');
+          t.end();
+        }
+      }
+    }),
+    res = testRes();
+
+  res.statusCode = 404;
+
+  handler( e, testReq(), res,
       testNext );
 });
 

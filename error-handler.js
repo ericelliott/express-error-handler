@@ -181,7 +181,7 @@ createHandler = function createHandler(options) {
 
     var defaultView = o.views['default'],
       defaultStatic = o.static['default'],
-      status = err.status,
+      status = err.status || res.statusCode,
       handler = o.handlers[status],
       view = o.views[status],
       staticFile = o.static[status],

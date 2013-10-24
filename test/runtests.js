@@ -271,8 +271,10 @@ test('.restify()', function (t) {
       t.end();
     },
 
-    handler = createHandler
-      .restify({shutdown: shutdown});
+    handler = createHandler({
+      shutdown: shutdown,
+      framework: 'restify'
+    });
 
   // Restify uses a different signature:
   handler(testReq(), testRes(), route, testError);
@@ -359,14 +361,13 @@ test('JSON with serializer',
           status: body.status,
           message: body.message,
           links: [
-            {self: body.route}
+            {self: '/foo'}
           ]
         };
       }
     });
 
   e.status = 500;
-  e.route = '/foo';
 
   handler(e, testReq(), {
     send: function send(status, obj) {

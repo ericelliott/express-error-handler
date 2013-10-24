@@ -93,6 +93,20 @@ var mixIn = require('mout/object/mixIn'),
     stream.pipe(res);
   },
 
+  send = function send(statusCode, err, res, o) {
+    var body = mixIn({}, {
+        status: statusCode,
+        message: err.message ||
+          statusCodes[statusCode]
+      });
+
+    body = (o.serializer) ?
+      o.serializer(body) :
+      body;
+
+    res.send(statusCode, body);
+  },
+
   defaults = {
     handlers: {},
     views: {},
@@ -101,7 +115,8 @@ var mixIn = require('mout/object/mixIn'),
     exitStatus: 1,
     server: undefined,
     shutdown: undefined,
-    serializer: undefined
+    serializer: undefined,
+    framework: 'express'
   },
   createHandler;
 
@@ -139,9 +154,12 @@ var mixIn = require('mout/object/mixIn'),
  *        alternative shutdown function if the
  *        graceful shutdown fails.
  *
- * @param {function} serializer a function to
+ * @param {function} serializer A function to
  *        customize the JSON error object.
  *        Usage: serializer(err) return errObj
+ *
+ * @param {function} framework Either 'express'
+ *        (default) or 'restify'.
  *
  * @return {function} errorHandler Express error 
  *         handling middleware.
@@ -164,7 +182,10 @@ createHandler = function createHandler(options) {
         process.exit(o.exitStatus);
       }, o.timeout);
 
-    };
+    },
+    express = o.framework === 'express',
+    restify = o.framework === 'restify',
+    errorHandler;
 
   /**
    * Express error handler to handle any
@@ -176,12 +197,13 @@ createHandler = function createHandler(options) {
    * @param  {object}   res
    * @param  {function} next
    */
-  return function errorHandler(err, req,
+  errorHandler = function errorHandler(err, req,
       res, next) {
 
     var defaultView = o.views['default'],
       defaultStatic = o.static['default'],
-      status = err.status || res.statusCode,
+      status = err && err.status ||
+        res && res.statusCode,
       handler = o.handlers[status],
       view = o.views[status],
       staticFile = o.static[status],
@@ -198,26 +220,24 @@ createHandler = function createHandler(options) {
         if (defaultStatic) {
           return sendFile(defaultStatic, res);
         }
-        return res.format({
-          json: function () {
-            var body = mixIn({}, err, {
-                status: statusCode,
-                message: err.message ||
-                  statusCodes[statusCode]
-              });
-            body = (o.serializer) ?
-              o.serializer(body) :
-              body;
 
-            res.send(statusCode, body);
-          },
-          text: function () {
-            res.send(statusCode);
-          },
-          html: function () {
-            res.send(statusCode);
-          }
-        });
+        if (restify) {
+          send(statusCode, err, res, o);
+        }
+
+        if (express) {
+          return res.format({
+            json: function () {
+              send(statusCode, err, res, o);
+            },
+            text: function () {
+              res.send(statusCode);
+            },
+            html: function () {
+              res.send(statusCode);
+            }
+          });
+        }
       },
 
       resumeOrClose = function
@@ -227,6 +247,9 @@ createHandler = function createHandler(options) {
         }
       };
 
+    if (!res) {
+      return resumeOrClose(status);
+    }
 
     // If there's a custom handler defined,
     // use it and return.
@@ -267,6 +290,16 @@ createHandler = function createHandler(options) {
 
     close(o, exit);
   };
+
+  if (express) {
+    return errorHandler;
+  }
+
+  if (restify) {
+    return function (req, res, route, err) {
+      return errorHandler(err, req, res);
+    };
+  }
 };
 
 createHandler.isClientError = isClientError;
@@ -277,14 +310,6 @@ createHandler.clientError = function () {
     'deprecated. Use isClientError() instead.');
 
   return this.isClientError.apply(this, args);
-};
-
-createHandler.restify = function restify(options) {
-  var handler = createHandler(options);
-  return function restifyHandler(req, res,
-      route, err) {
-    handler(err, req, res);
-  };
 };
 
 // HTTP error generating route.

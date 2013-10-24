@@ -41,6 +41,10 @@ app.get('/error', function createError(req,
   next(err);
 });
 
+
+// Route that triggers a sample error:
+app.all('/*', errorHandler.httpError(404));
+
 // Log request errors:
 app.use( log.errorLogger() );
 

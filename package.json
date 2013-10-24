@@ -1,6 +1,6 @@
 {
   "name": "express-error-handler",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "description": "A graceful error handler for Express applications.",
   "main": "error-handler.js",
   "scripts": {
@@ -24,7 +24,8 @@
     "url": "https://github.com/dilvie/express-error-handler/issues"
   },
   "dependencies": {
-    "mout": "~0.7.1"
+    "mout": "~0.7.1",
+    "connect-domain": "~0.5.0"
   },
   "devDependencies": {
     "express": "~3.4.0",

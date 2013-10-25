@@ -141,10 +141,16 @@ app.all( '/foo', createHandler.httpError(405) );
 
 ## Restify support
 
-Restify error handling works different from
-Express.
+Restify error handling works different from Express. To trigger restify mode, you'll need to pass the `framework` parameter when you create the errorHandler:
 
-First, `next(err)` is synonymous with `res.send(status, error)`. This means that you should *only use `next(err)` to report errors to users*, and not as a way to aggregate errors to a common error handler. Instead, you can invoke an error handler directly to aggregate your error handling in one place.
+```js
+var handleError = errorHandler({
+  server: server
+  framework: 'restify'
+});
+```
+
+In restify, `next(err)` is synonymous with `res.send(status, error)`. This means that you should *only use `next(err)` to report errors to users*, and not as a way to aggregate errors to a common error handler. Instead, you can invoke an error handler directly to aggregate your error handling in one place.
 
 There is no error handling middleware. Instead, use `server.on('uncaughtException', handleError)`
 

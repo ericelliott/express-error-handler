@@ -146,7 +146,7 @@ Express.
 
 First, `next(err)` is synonymous with `res.send(status, error)`. This means that you should *only use `next(err)` to report errors to users*, and not as a way to aggregate errors to a common error handler. Instead, you can invoke an error handler directly to aggregate your error handling in one place.
 
-* There is no error handling middleware. Instead, use `server.on(`uncaughtException`, handleError)`
+There is no error handling middleware. Instead, use `server.on('uncaughtException', handleError)`
 
 See the examples in `./examples/restify.js`
 

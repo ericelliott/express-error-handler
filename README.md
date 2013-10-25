@@ -66,41 +66,44 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 
 
 ```js
-    var errorHandler = require('express-error-handler'),
-      handler = errorHandler({
-        handlers: {
-          '404': function err404() {
-            // do some custom thing here...
-          }
-        }
-      });
+var errorHandler = require('express-error-handler'),
+  handler = errorHandler({
+    handlers: {
+      '404': function err404() {
+        // do some custom thing here...
+      }
+    }
+  });
 
-    // After all your routes...
-    // Pass a 404 into next(err)
-    app.use( errorHandler.httpError(404) );
+// After all your routes...
+// Pass a 404 into next(err)
+app.use( errorHandler.httpError(404) );
 
-    // Handle all unhandled errors:
-    app.use( handler );
+// Handle all unhandled errors:
+app.use( handler );
+```
 
 Or for a static page:
 
-      handler = errorHandler({
-        static: {
-          '404': function err404() {
-            // do some custom thing here...
-          }
-        }
-      });
+```js
+handler = errorHandler({
+  static: {
+    '404': function err404() {
+      // do some custom thing here...
+    }
+  }
+});
+```
 
 Or for a custom view:
-
-      handler = errorHandler({
-        views: {
-          '404': function err404() {
-            // do some custom thing here...
-          }
-        }
-      });
+```js
+handler = errorHandler({
+  views: {
+    '404': function err404() {
+      // do some custom thing here...
+    }
+  }
+});
 ```
 
 [More examples](https://github.com/dilvie/express-error-handler/tree/master/examples) are available in the examples folder.

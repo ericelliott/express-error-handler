@@ -231,10 +231,10 @@ createHandler = function createHandler(options) {
               send(statusCode, err, res, o);
             },
             text: function () {
-              res.send(statusCode);
+              res.status(statusCode).end();
             },
             html: function () {
-              res.send(statusCode);
+              res.status(statusCode).end();
             }
           });
         }

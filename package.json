@@ -24,18 +24,19 @@
     "url": "https://github.com/dilvie/express-error-handler/issues"
   },
   "dependencies": {
-    "mout": "~0.7.1",
-    "connect-domain": "~0.5.0"
+    "connect-domain": "~0.5.0",
+    "json-stringify-safe": "^5.0.0",
+    "mout": "~0.7.1"
   },
   "devDependencies": {
-    "express": "~3.4.0",
-    "tape": "~1.1.1",
-    "supertest": "~0.8.0",
-    "grunt": "~0.4.1",
-    "grunt-contrib-jshint": "~0.6.4",
     "bunyan-request-logger": "~0.1.1",
     "connect-cache-control": "~0.1.0",
-    "through": "~2.3.4",
-    "restify": "~2.6.0"
+    "express": "^4.9.8",
+    "grunt": "~0.4.1",
+    "grunt-contrib-jshint": "~0.6.4",
+    "restify": "~2.6.0",
+    "supertest": "~0.8.0",
+    "tape": "~1.1.1",
+    "through": "~2.3.4"
   }
 }

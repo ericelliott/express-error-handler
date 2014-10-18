@@ -19,6 +19,7 @@ var mixIn = require('mout/object/mixIn'),
   path = require('path'),
   fs = require('fs'),
   statusCodes = require('http').STATUS_CODES,
+  stringify = require('json-stringify-safe'),
 
   /**
    * Return true if the error status represents
@@ -94,17 +95,18 @@ var mixIn = require('mout/object/mixIn'),
   },
 
   send = function send(statusCode, err, res, o) {
-    var body = mixIn({}, {
+    var body = {
         status: statusCode,
         message: err.message ||
           statusCodes[statusCode]
-      });
+      };
 
     body = (o.serializer) ?
       o.serializer(body) :
       body;
 
-    res.send(statusCode, body);
+    res.statusCode = statusCode;
+    res.send(body);
   },
 
   defaults = {
@@ -228,13 +230,25 @@ createHandler = function createHandler(options) {
         if (express) {
           return res.format({
             json: function () {
-              send(statusCode, err, res, o);
+              send(statusCode, err, res, {
+                serializer: o.serializer || function (o) {
+                  return o;
+                }
+              });
             },
             text: function () {
-              res.send(statusCode);
+              send(statusCode, err, res, {
+                serializer: function (o) {
+                  return o.message;
+                }
+              });
             },
             html: function () {
-              res.send(statusCode);
+              send(statusCode, err, res, {
+                serializer: function (o) {
+                  return o.message;
+                }
+              });
             }
           });
         }

@@ -1,7 +1,8 @@
 express-error-handler
 =====================
 
-A graceful error handler for Express applications.
+A graceful error handler for Express applications. This also patches a DOS exploit where users can manually trigger bad request errors that shut down your app.
+
 
 ## Quick start:
 

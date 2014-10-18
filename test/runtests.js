@@ -3,6 +3,7 @@
 var test = require('tape'),
   createHandler = require('../error-handler.js'),
   through = require('through'),
+  mixIn = require('mout/object/mixIn'),
 
   format = function format (types) {
     return types['text']();
@@ -10,11 +11,16 @@ var test = require('tape'),
 
   testError = new Error('Test error'),
   testReq = function () { return {}; },
-  testRes = function () {
-    return {
+  testRes = function (config) {
+    return mixIn({
       send: function send() {},
-      format: format
-    };
+      end: function end() {},
+      format: format,
+      status: function (statusCode) {
+        this.statusCode = statusCode;
+        return this;
+      }
+    }, config);
   },
   testNext = function () {};
 
@@ -101,17 +107,18 @@ test('Custom views', function (t) {
       views: {
         '404': '404 view'
       }
-    });
-
-  e.status = 404;
-
-  handler(e, testReq(), {
-    render: function render() {
+    }),
+    res = testRes({
+      render: function render() {
         t.pass('Render should be called for ' + 
           'custom views.');
         t.end();
       }
-    },testNext);
+    });
+
+  e.status = 404;
+
+  handler(e, testReq(), res, testNext);
 });
 
 test('Error with status default behavior', 
@@ -121,21 +128,22 @@ test('Error with status default behavior',
       t.fail('shutdown should not be called.');
     },
     e = new Error(),
+    status = 404,
     handler = createHandler({
       shutdown: shutdown
-    });
-
-  e.status = 404;
-
-  handler(e, testReq(), {
-      send: function send(status) {
-        t.equal(status, 404,
-          'res.send() should be called ' + 
-          'with error status.');
+    }),
+    res = testRes({
+      send: function send() {
+        t.equal(res.statusCode, status,
+          'res.statusCode should be set to err.status');
         t.end();
       },
       format: format
-  }, testNext);
+    });
+
+  e.status = status;
+
+  handler(e, testReq(), res, testNext);
 });
 
 test('Default error status for non-user error', 
@@ -145,19 +153,21 @@ test('Default error status for non-user error',
     e = new Error(),
     handler = createHandler({
       shutdown: shutdown
+    }),
+    status = 511,
+    defaultStatus = 500,
+    res = testRes({
+      send: function send() {
+        t.equal(res.statusCode, defaultStatus,
+          'res.statusCode should be set to default status');
+        t.end();
+      },
+      format: format
     });
 
-  e.status = 511;
+  e.status = status;
 
-  handler(e, testReq(), {
-    send: function send(status) {
-        t.equal(status, 500,
-          'res.send() should be called ' + 
-          'with default status.');
-        t.end();
-    },
-    format: format
-  }, testNext);
+  handler(e, testReq(), res, testNext);
 });
 
 test('Custom timeout', 
@@ -300,15 +310,9 @@ test('JSON error format',
     e = new Error(),
     handler = createHandler({
       shutdown: shutdown
-    });
-
-  e.status = 500;
-
-  handler(e, testReq(), {
-    send: function send(status, obj) {
-        t.equal(obj.status, 500,
-          'res.send() should be called ' + 
-          'with status code as first param.');
+    }),
+    res = testRes({
+      send: function send(obj) {
         t.equal(obj.status, 500,
           'res.send() should be called ' + 
           'with error status on response body.');
@@ -316,11 +320,15 @@ test('JSON error format',
           'res.send() should be called ' + 
           'with error message on response body.');
         t.end();
-    },
-    format: function format (types) {
-      return types['json']();
-    }
-  }, testNext);
+      },
+      format: function format (types) {
+        return types['json']();
+      }
+    });
+
+  e.status = 500;
+
+  handler(e, testReq(), res, testNext);
 });
 
 test('JSON with custom error message', 
@@ -330,22 +338,23 @@ test('JSON with custom error message',
     e = new Error(),
     handler = createHandler({
       shutdown: shutdown
+    }),
+    res = testRes({
+      send: function send(obj) {
+        t.equal(obj.message, 'half baked',
+          'res.send() should be called ' + 
+          'with custom error message.');
+        t.end();
+      },
+      format: function format (types) {
+        return types['json']();
+      }
     });
 
   e.status = 420;
   e.message = 'half baked';
 
-  handler(e, testReq(), {
-    send: function send(status, obj) {
-        t.equal(obj.message, 'half baked',
-          'res.send() should be called ' + 
-          'with custom error message.');
-        t.end();
-    },
-    format: function format (types) {
-      return types['json']();
-    }
-  }, testNext);
+  handler(e, testReq(), res, testNext);
 });
 
 
@@ -365,19 +374,20 @@ test('JSON with serializer',
           ]
         };
       }
-    });
-
-  e.status = 500;
-
-  handler(e, testReq(), {
-    send: function send(status, obj) {
+    }),
+    res = testRes({
+    send: function send(obj) {
         t.equal(obj.links[0].self, '/foo',
           'Should be able to define a custom ' +
           'serializer for error responses.');
         t.end();
-    },
-    format: function format (types) {
-      return types['json']();
-    }
-  }, testNext);
+      },
+      format: function format (types) {
+        return types['json']();
+      }
+    });
+
+  e.status = 500;
+
+  handler(e, testReq(), res, testNext);
 });

@@ -30,7 +30,7 @@ app.get('/log', noCache,
 
   // Since all requests are automatically logged,
   // all you need to do is send the response:
-  res.send(200);
+  res.status(200).end();
 });
 
 // Route that triggers a sample error:

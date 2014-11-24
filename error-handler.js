@@ -53,9 +53,14 @@ var mixIn = require('mout/object/mixIn'),
     // First, try a graceful shutdown:
     if (o.server && typeof o.server.close ===
         'function') {
-      o.server.close(function () {
+      try {
+        o.server.close(function () {
+          process.exit(o.exitStatus);
+        });
+      }
+      finally {
         process.exit(o.exitStatus);
-      });
+      }
     }
 
     // Just in case the server.close() callback

@@ -1,6 +1,6 @@
 {
   "name": "express-error-handler",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A graceful error handler for Express applications.",
   "main": "error-handler.js",
   "scripts": {

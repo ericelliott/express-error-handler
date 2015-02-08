@@ -122,7 +122,8 @@ var mixIn = require('mout/object/mixIn'),
     server: undefined,
     shutdown: undefined,
     serializer: undefined,
-    framework: 'express'
+    framework: 'express',
+    maintenance: {}
   },
   createHandler;
 
@@ -189,9 +190,33 @@ createHandler = function createHandler(options) {
       }, o.timeout);
 
     },
+    /**
+     * Test if maintenance condition exists
+     * @param {number} status
+     * @returns {boolean} true if maintenance condition
+     */
+    isMaintenance = function isMaintenance(status){
+      return (status === 503 &&
+        typeof o.maintenance.enable === 'function' &&
+        o.maintenance.enable()
+        );
+    },
+    /**
+     * Make a response header for maintenance condition
+     * @returns {object} Retry-After response header
+     */
+    maintHeader = function maintHeader(){
+      var seconds = (typeof o.maintenance.retryAfterSeconds === 'function' &&
+        o.maintenance.retryAfterSeconds());
+      return seconds ? { 'Retry-After': seconds } : {};
+    },
+
     express = o.framework === 'express',
     restify = o.framework === 'restify',
     errorHandler;
+
+  // Update the exposed maintenance test
+  createHandler.isMaintenance = isMaintenance;
 
   /**
    * Express error handler to handle any
@@ -218,6 +243,10 @@ createHandler = function createHandler(options) {
           renderDefault(statusCode) {
 
         res.statusCode = statusCode;
+
+        if (isMaintenance(statusCode)) {
+          res.header(maintHeader());
+        }
 
         if (defaultView) {
           return res.render(defaultView, err);
@@ -260,7 +289,7 @@ createHandler = function createHandler(options) {
 
       resumeOrClose = function
           resumeOrClose(status) {
-        if (!isClientError(status)) {
+        if (!isClientError(status) && !isMaintenance(status)) {
           return close(o, exit);
         }
       };
@@ -298,7 +327,7 @@ createHandler = function createHandler(options) {
     // attackers can send malformed requests
     // for the purpose of creating a Denial 
     // Of Service (DOS) attack.
-    if (isClientError(status)) {
+    if (isClientError(status) || isMaintenance(status)) {
       return renderDefault(status);
     }
 
@@ -320,6 +349,7 @@ createHandler = function createHandler(options) {
   }
 };
 
+createHandler.isMaintenance = function() { return false; };
 createHandler.isClientError = isClientError;
 createHandler.clientError = function () {
   var args = [].slice.call(arguments);

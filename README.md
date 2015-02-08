@@ -3,6 +3,21 @@ express-error-handler
 
 A graceful error handler for Express applications. This also patches a DOS exploit where users can manually trigger bad request errors that shut down your app.
 
+## About This Fork
+This fork allows for conditional maintenance mode handling.
+### Options extended
+```javascript
+// error handler options now accept an optional maintenance option
+{
+  // maintenance handlers should read values from environment
+  maintenance: {
+    // return a truthy value to enable 503 handlers that won't shutdown the app
+    enabled: function() { return true; },
+    // if 503 and maintenance enabled,
+    retryAfterSeconds: function() { return 14400; }
+  }
+}
+```
 
 ## Quick start:
 

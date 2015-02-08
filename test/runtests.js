@@ -15,6 +15,9 @@ var test = require('tape'),
     return mixIn({
       send: function send() {},
       end: function end() {},
+      header: function header(headers) {
+        this.headers = headers;
+      },
       format: format,
       status: function (statusCode) {
         this.statusCode = statusCode;
@@ -388,6 +391,60 @@ test('JSON with serializer',
     });
 
   e.status = 500;
+
+  handler(e, testReq(), res, testNext);
+});
+
+test('maintenance enabled, error status 503 kept for non-user error', 
+    function (t) {
+
+  var shutdown = function shutdown() {},
+    e = new Error(),
+    handler = createHandler({
+      shutdown: shutdown,
+      maintenance: {
+        enable: function() { return true; }
+      }
+    }),
+    status = 503,
+    defaultStatus = 500,
+    res = testRes({
+      send: function send() {
+        t.equal(res.statusCode, status,
+          'res.statusCode should be kept for maintenance condition');
+        t.end();
+      },
+      format: format
+    });
+
+  e.status = status;
+
+  handler(e, testReq(), res, testNext);
+});
+
+test('maintenance enabled, retry after response should be set', 
+    function (t) {
+
+  var shutdown = function shutdown() {},
+    e = new Error(),
+    handler = createHandler({
+      shutdown: shutdown,
+      maintenance: {
+        enable: function() { return true; },
+        retryAfterSeconds: function() { return 14400; }
+      }
+    }),
+    status = 503,
+    defaultStatus = 500,
+    res = testRes({
+      send: function send() {
+        t.deepEqual(res.headers, { 'Retry-After': 14400 }, "503 retry-after response header should be set");
+        t.end();
+      },
+      format: format
+    });
+
+  e.status = status;
 
   handler(e, testReq(), res, testNext);
 });

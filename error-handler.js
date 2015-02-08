@@ -244,10 +244,6 @@ createHandler = function createHandler(options) {
 
         res.statusCode = statusCode;
 
-        if (isMaintenance(statusCode)) {
-          res.header(maintHeader());
-        }
-
         if (defaultView) {
           return res.render(defaultView, err);
         }
@@ -296,6 +292,11 @@ createHandler = function createHandler(options) {
 
     if (!res) {
       return resumeOrClose(status);
+    }
+
+    // If maintenance, set maintenance response header
+    if (isMaintenance(status)) {
+      res.header(maintHeader());
     }
 
     // If there's a custom handler defined,

@@ -299,6 +299,9 @@ createHandler = function createHandler(options) {
       res.header(maintHeader());
     }
 
+    // Always set a status
+    res.status(status);
+
     // If there's a custom handler defined,
     // use it and return.
     if (typeof handler === 'function') {

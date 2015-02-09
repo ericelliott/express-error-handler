@@ -3,22 +3,6 @@ express-error-handler
 
 A graceful error handler for Express applications. This also patches a DOS exploit where users can manually trigger bad request errors that shut down your app.
 
-## About This Fork
-This fork allows for conditional maintenance mode handling.
-### Options extended
-```javascript
-// error handler options now accept an optional maintenance option
-{
-  // maintenance handlers should read values from environment
-  maintenance: {
-    // return a truthy value to enable 503 handlers that won't shutdown the app
-    enabled: function() { return true; },
-    // if 503 and maintenance enabled,
-    retryAfterSeconds: function() { return 14400; }
-  }
-}
-```
-
 ## Quick start:
 
 ```js
@@ -74,6 +58,9 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 * @param {function} [options.shutdown] An alternative shutdown function if the graceful shutdown fails.
 * @param {function} serializer a function to customize the JSON error object. Usage: serializer(err) return errObj
 * @param {function} framework Either 'express' (default) or 'restify'.
+* @param {object} [options.maintenance] Allow a maintenance mode 503 response without app shutdown.
+  - options.maintenance.enabled {function} Return truthy to enable maintenance mode and prevent app shutdown.
+  - options.maintenance.retryAfterSeconds {function} Return number of seconds {number} to specify in 'Retry-After' header.
 * @return {function} errorHandler Express error handling middleware.
 
 ### Examples:
@@ -137,6 +124,21 @@ Return true if the error status represents a client error that should not trigge
 ```js
 errorHandler.isClientError(404); // returns true
 errorHandler.isClientError(500); // returns false
+```
+
+## errorHandler.isMaintenance(status)
+
+Return true if the error status can represent a maintenance condition and a maintenance condition is enabled.
+If isMaintenance returns true, the error status will not trigger a restart.
+
++ @param {number} status
++ @returns {boolean}
+
+### Example
+```js
+errorHandler.isMaintenance(503); // returns true if options.maintenance.enabled returns truthy
+errorHandler.isMaintenance(503); // returns false if options.maintenance.enabled returns falsey
+errorHandler.isMaintenance(500); // always returns false
 ```
 
 

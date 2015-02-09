@@ -191,18 +191,19 @@ createHandler = function createHandler(options) {
 
     },
     /**
-     * Test if maintenance condition exists
+     * Test if maintenance condition exists.
      * @param {number} status
      * @returns {boolean} true if maintenance condition
      */
     isMaintenance = function isMaintenance(status){
       return (status === 503 &&
-        typeof o.maintenance.enable === 'function' &&
-        o.maintenance.enable()
+        typeof o.maintenance.enabled === 'function' &&
+        o.maintenance.enabled()
         );
     },
     /**
-     * Make a response header for maintenance condition
+     * Make a response header for maintenance condition.
+     * If retryAfterSeconds returns falsey, don't add header.
      * @returns {object} Retry-After response header
      */
     maintHeader = function maintHeader(){
@@ -215,7 +216,7 @@ createHandler = function createHandler(options) {
     restify = o.framework === 'restify',
     errorHandler;
 
-  // Update the exposed maintenance test
+  // Update the exposed maintenance test.
   createHandler.isMaintenance = isMaintenance;
 
   /**
@@ -294,12 +295,12 @@ createHandler = function createHandler(options) {
       return resumeOrClose(status);
     }
 
-    // If maintenance, set maintenance response header
+    // If maintenance, set maintenance response header.
     if (isMaintenance(status)) {
       res.header(maintHeader());
     }
 
-    // Always set a status
+    // Always set a status.
     res.status(status);
 
     // If there's a custom handler defined,
@@ -353,7 +354,9 @@ createHandler = function createHandler(options) {
   }
 };
 
+// This is updated once the error handler is created.
 createHandler.isMaintenance = function() { return false; };
+
 createHandler.isClientError = isClientError;
 createHandler.clientError = function () {
   var args = [].slice.call(arguments);

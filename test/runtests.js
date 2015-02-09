@@ -222,6 +222,11 @@ test('Static file', function (t) {
       t.end();
     });
 
+  res.status = res.status || function(code){
+    res.statusCode = code;
+    return res;
+  };
+
   handler(e, testReq(), res, testNext);
 });
 
@@ -273,6 +278,11 @@ test('Default static file', function (t) {
 
       t.end();
     });
+
+  res.status = res.status || function(code){
+    res.statusCode = code;
+    return res;
+  };
 
   handler(e, testReq(), res, testNext);
 });
@@ -403,7 +413,7 @@ test('maintenance enabled, error status 503 kept for non-user error',
     handler = createHandler({
       shutdown: shutdown,
       maintenance: {
-        enable: function() { return true; }
+        enabled: function() { return true; }
       }
     }),
     status = 503,
@@ -430,7 +440,7 @@ test('maintenance enabled, retry after response should be set',
     handler = createHandler({
       shutdown: shutdown,
       maintenance: {
-        enable: function() { return true; },
+        enabled: function() { return true; },
         retryAfterSeconds: function() { return 14400; }
       }
     }),
@@ -438,7 +448,9 @@ test('maintenance enabled, retry after response should be set',
     defaultStatus = 500,
     res = testRes({
       send: function send() {
-        t.deepEqual(res.headers, { 'Retry-After': 14400 }, "503 retry-after response header should be set");
+        t.deepEqual(res.headers, 
+          { 'Retry-After': 14400 }, 
+          "503 retry-after response header should be set");
         t.end();
       },
       format: format
@@ -447,4 +459,38 @@ test('maintenance enabled, retry after response should be set',
   e.status = status;
 
   handler(e, testReq(), res, testNext);
+});
+
+test('.isMaintenance()', function (t) {
+  // Clear the error-handler from require cache so we can have a 
+  //  fresh look at the module state.
+  delete require.cache[require.resolve('../error-handler.js')];
+  
+  var result, handler, 
+      newCreateHandler = require('../error-handler.js');
+
+  result = newCreateHandler.isMaintenance(503);
+  t.equal(result, false, 'Should always be false before errorHandler creation');
+
+  handler = newCreateHandler();
+  result = newCreateHandler.isMaintenance(503);
+  t.equal(result, false, 'Should be false if no maintenance');
+
+  handler = newCreateHandler({
+    maintenance: {
+      enabled: function () { return false; }
+    }
+  });
+  result = newCreateHandler.isMaintenance(503);
+  t.equal(result, false, 'Should be false if not enabled');
+
+  handler = newCreateHandler({
+    maintenance: {
+      enabled: function () { return true; }
+    }    
+  });
+  result = newCreateHandler.isMaintenance(503);
+  t.equal(result, true, 'Should be true if 503 and maintenance enabled');
+
+  t.end();
 });

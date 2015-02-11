@@ -58,9 +58,18 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 * @param {function} [options.shutdown] An alternative shutdown function if the graceful shutdown fails.
 * @param {function} serializer a function to customize the JSON error object. Usage: serializer(err) return errObj
 * @param {function} framework Either 'express' (default) or 'restify'.
-* @param {object} [options.maintenance] Allow a maintenance mode 503 response without app shutdown.
-  - options.maintenance.enabled {function} Return truthy to enable maintenance mode and prevent app shutdown.
-  - options.maintenance.retryAfterSeconds {function} Return number of seconds {number} to specify in 'Retry-After' header.
+
+* @param {object} [options.maintenance]
+
+Allows a maintenance mode 503 response without app shutdown. Default members use environment variables named:
+  - `ERR_HANDLER_MAINT_ENABLED` Considered true if set to any value except 'no', '0', 'false', '', 'undefined'.
+  - `ERR_HANDLER_MAINT_RETRYAFTER` Can be a value in seconds (for relative) or an HTTP compliant GMT date (for absolute). Defaults to 3600 seconds.
+
+* @member {function} [options.maintenance.enabled] Return truthy to enable maintenance mode and prevent app shutdown.
+* @member {function} [options.maintenance.retryAfter]  Return value {number|HTTP_Date} to specify in 'Retry-After' header.
+[HTTP 503 Reference](http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.4)
+[Retry-After Reference](http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37)
+
 * @return {function} errorHandler Express error handling middleware.
 
 ### Examples:
@@ -126,7 +135,10 @@ errorHandler.isClientError(404); // returns true
 errorHandler.isClientError(500); // returns false
 ```
 
-## errorHandler.isMaintenance(status)
+## errorHandler.maintenance
+
+### errorHandler.maintenance([message])
+Returns the middleware for conditionally skipping to the errorHandler middleware
 
 Return true if the error status can represent a maintenance condition and a maintenance condition is enabled.
 If isMaintenance returns true, the error status will not trigger a restart.
@@ -140,7 +152,6 @@ errorHandler.isMaintenance(503); // returns true if options.maintenance.enabled 
 errorHandler.isMaintenance(503); // returns false if options.maintenance.enabled returns falsey
 errorHandler.isMaintenance(500); // always returns false
 ```
-
 
 ## errorHandler.httpError(status, [message])
 

@@ -59,17 +59,6 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 * @param {function} serializer a function to customize the JSON error object. Usage: serializer(err) return errObj
 * @param {function} framework Either 'express' (default) or 'restify'.
 
-* @param {object} [options.maintenance]
-
-Allows a maintenance mode 503 response without app shutdown. Default members use environment variables named:
-  - `ERR_HANDLER_MAINT_ENABLED` Considered true if set to any value except 'no', '0', 'false', '', 'undefined'.
-  - `ERR_HANDLER_MAINT_RETRYAFTER` Can be a value in seconds (for relative) or an HTTP compliant GMT date (for absolute). Defaults to 3600 seconds.
-
-* @member {function} [options.maintenance.enabled] Return truthy to enable maintenance mode and prevent app shutdown.
-* @member {function} [options.maintenance.retryAfter]  Return value {number|HTTP_Date} to specify in 'Retry-After' header.
-[HTTP 503 Reference](http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.4)
-[Retry-After Reference](http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37)
-
 * @return {function} errorHandler Express error handling middleware.
 
 ### Examples:
@@ -127,30 +116,11 @@ Return true if the error status represents a client error that should not trigge
 * @param  {number} status
 * @return {boolean}
 
-
 ### Example
 
 ```js
 errorHandler.isClientError(404); // returns true
 errorHandler.isClientError(500); // returns false
-```
-
-## errorHandler.maintenance
-
-### errorHandler.maintenance([message])
-Returns the middleware for conditionally skipping to the errorHandler middleware
-
-Return true if the error status can represent a maintenance condition and a maintenance condition is enabled.
-If isMaintenance returns true, the error status will not trigger a restart.
-
-+ @param {number} status
-+ @returns {boolean}
-
-### Example
-```js
-errorHandler.isMaintenance(503); // returns true if options.maintenance.enabled returns truthy
-errorHandler.isMaintenance(503); // returns false if options.maintenance.enabled returns falsey
-errorHandler.isMaintenance(500); // always returns false
 ```
 
 ## errorHandler.httpError(status, [message])
@@ -166,6 +136,73 @@ Take an error status and return a route that sends an error with the appropriate
 app.get( '/foo', handleFoo() );
 // 405 for unsupported methods.
 app.all( '/foo', createHandler.httpError(405) );
+```
+
+## errorHandler.maintenance([options])
+
+Returns the middleware for responding to an application maintenance condition.
+When a maintenance is enabled, the application responds to all requests with a `503` status and sets a `Retry-After` response header. In this case, the application will not shutdown. All middleware placed after the maintenance middleware will be skipped when a maintenance is enabled.
+
+By default, maintenance is controlled using environment variables:
+  * `ERR_HANDLER_MAINT_ENABLED` Set to 'TRUE' to enable an application maintenance condition, all other values are false.
+  * `ERR_HANDLER_MAINT_RETRYAFTER` Can be a value in seconds (for relative) or an HTTP compliant GMT date (for absolute). Defaults to 3600 seconds.
+
+### options
+Specify options if you need to override the behavior of reading values from the environment variables.
+* `status` A function that returns truthy to enable a maintenance condition.
+* `retryAfter` A function that returns a value {Number|HTTP_Date} to specify in 'Retry-After' header.
+
+### References
+* [HTTP 503](http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.4)
+* [Retry-After](http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37)
+
+To send a user friendly page along with the maintenance condition, setup a handler for `503`.
+### Example
+```javascript
+var express = require('express'),
+    errorHandler = require('express-error-handler'),
+    http = require('http'),
+    logger = require('morgan'),
+    app = express(),
+    env = process.env,
+    port = env.PORT || 3000,
+    server;
+
+// Create the server to pass to the error handler
+server = http.createServer(app);
+
+// Middleware installed before maintenance always runs
+app.use(logger());
+
+// Respond to maintenance conditions
+app.use(errorHandler.maintenance());
+
+//
+// Any middleware installed here is skipped when maintenance
+// is enabled.
+// app.use(...);
+// app.use(...);
+// ...
+//
+
+// Create and install the errorHandler.
+app.use(errorHandler({
+  server: server,
+  views: {
+    '503': function err503() {
+      if (errorHandler.maintenance.status()) {
+        // This is a maintenance condition, not an error,
+        // respond with a nice maintenance page.
+      } else {
+        // Server simply overloaded, log and respond
+      }
+    }
+  }
+}));
+
+server.listen(port, function () {
+  console.log('Listening on port ' + port);
+});
 ```
 
 ## Restify support

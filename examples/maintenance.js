@@ -14,9 +14,7 @@ var express = require('express'),
 // ...
 
 // Send the app into maintenance mode using env.ERR_HANDLER_MAINT_ENABLED
-// Unset env.ERR_HANDLER_MAINT_ENABLED to disable.
-// Or use the Maintenance API to get/set the env variable for this process:
-// errorHandler.maintenance.status([true|false])
+// env.ERR_HANDLER_MAINT_ENABLED must be equal to TRUE to enable maintenance.
 app.use(errorHandler.maintenance());
 
 //
@@ -34,9 +32,7 @@ server = http.createServer(app);
 // The 503 maintenance response will send the Retry-After header
 // using the value set in env.ERR_HANDLER_MAINT_RETRYAFTER.
 // Value can be seconds or HTTP-Date (GMT).
-// For more info:
-//   503: http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.4
-//   Retry-After: http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
+// This example will respond to any 503 with the 503 page.
 app.use(errorHandler({
   server: server,
   static: {

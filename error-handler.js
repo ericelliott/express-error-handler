@@ -92,92 +92,6 @@ var mixIn = require('mout/object/mixIn'),
     };
   },
 
-  /**
-   * The default management of the maintenance state.
-   * If no arguments, reads ERR_HANDLER_MAINT_ENABLED environment 
-   * variable to determine if maintenance is enabled.
-   *
-   * If a state is supplied, set the environment variable
-   * and return the new enabled state.
-   *
-   * If the env var contains a reasonable value that denotes
-   * a disabled condition, that is honored.
-   *
-   * @param {string} The new state to set ERR_HANDLER_MAINT_ENABLED to
-   * @returns {boolean} True if maintenance is enabled, false otherwise
-   */
-  maintenanceState = function maintenanceState(state) {
-    if (arguments.length > 0) {
-      process.env.ERR_HANDLER_MAINT_ENABLED = state;
-    }
-    var value = process.env.ERR_HANDLER_MAINT_ENABLED;
-    var negative = {
-      '0': true, 'false': true, 'no': true, 'undefined': true
-    };
-    return !!(value && !negative[value.toLowerCase()]);
-  },
-
-  /**
-   * Get the default maintenance Retry-After value.
-   * Uses a fallback of 3600 seconds (1 hour) because
-   * this function is called only if the user has set 
-   * the maintenance to enabled (and therefore wants
-   * a maintenance response to occur).
-   *
-   * If the server responds with a 503 and no Retry-After
-   * header, the client treats it as a 500 per HTTP spec.
-   *
-   * Value can be seconds from now (for a relative Retry-After),
-   * or an HTTP-date (RFC2822 GMT per spec, but ISO 8601 or 
-   * other form may be preferable). Assume user knows best.
-   *
-   * @returns The value for the Retry-After response header.
-   */
-  maintenanceRetryAfter = function maintenanceRetryAfter() {
-    var result, value = process.env.ERR_HANDLER_MAINT_RETRYAFTER;
-    // fallback b/c user wants maintenance & no Retry-After means 500
-    var fallback = 3600;
-    // First, try seconds
-    result = parseInt(value, 10);
-    result = (result === 0 || (result && result < 0)) ? fallback : result;
-    if (!result) {
-      // NaN, try date
-      result = Date.parse(value) && value || fallback;
-    }
-    return result;
-  },
-
-  /**
-   * Takes an optional message and returns middleware
-   * to conditionally invoke the errorHandler if 
-   * maintenance is enabled.
-   *
-   * About getEnabled
-   * If this is called after the errorHandler is created,
-   * use the possibly overriden enabled method.
-   * Otherwise use the default method.
-   *
-   * @param {string} message
-   * @returns {function} conditional maintenance middleware
-   */
-  maintenance = function maintenance(message) {
-    return function conditional503(req, res, next) {
-      var err;
-      var getEnabled = 
-        (typeof maintenance._maintEnabled === 'function' && 
-         maintenance._maintEnabled) ||
-        maintenanceState;
-
-      if (getEnabled()) {
-        err = new Error();
-        err.status = 503;
-        err.message = message ||
-          statusCodes[err.status];
-      }
-      next(err);
-    };
-  },
-
   sendFile = function sendFile (staticFile, res) {
     var filePath = path.resolve(staticFile),
       stream = fs.createReadStream(filePath);
@@ -208,11 +122,7 @@ var mixIn = require('mout/object/mixIn'),
     server: undefined,
     shutdown: undefined,
     serializer: undefined,
-    framework: 'express',
-    maintenance: {
-      enabled: maintenanceState,
-      retryAfter: maintenanceRetryAfter
-    }
+    framework: 'express'
   },
   createHandler;
 
@@ -257,13 +167,6 @@ var mixIn = require('mout/object/mixIn'),
  * @param {function} framework Either 'express'
  *        (default) or 'restify'.
  *
- * @param {object} [options.maintenance] Optionally override
- *        the default maintenance state management.
- * @member {function} [options.maintenance.enabled]
- * @returns True if maintenance mode is enabled, false otherwise.
- * @member {function} [options.maintenance.retryAfter]
- * @returns The value for the Retry-After response header.
- *
  * @return {function} errorHandler Express error 
  *         handling middleware.
  */
@@ -286,34 +189,9 @@ createHandler = function createHandler(options) {
       }, o.timeout);
 
     },
-    /**
-     * Test if maintenance condition exists.
-     * @param {number} status
-     * @returns {boolean} true if maintenance condition
-     */
-    isMaintenance = function isMaintenance(status){
-      return (status === 503 &&
-        typeof o.maintenance.enabled === 'function' &&
-        o.maintenance.enabled()
-        );
-    },
-    /**
-     * Make a response header for maintenance condition.
-     * If retryAfter returns falsey, don't add header.
-     * @returns {object} Retry-After response header
-     */
-    maintHeader = function maintHeader(){
-      var retryAfter = (typeof o.maintenance.retryAfter === 'function' &&
-        o.maintenance.retryAfter());
-      return retryAfter ? { 'Retry-After': retryAfter } : {};
-    },
-
     express = o.framework === 'express',
     restify = o.framework === 'restify',
     errorHandler;
-
-  // Update the maintenance API.
-  maintenance._maintEnabled = o.maintenance.enabled;
 
   /**
    * Express error handler to handle any
@@ -380,9 +258,17 @@ createHandler = function createHandler(options) {
         }
       },
 
+      shouldContinue = function
+          shouldContinue(status) {
+        var isMaintenance = 
+          typeof createHandler.maintenance._isMaintenance === 'function' &&
+          createHandler.maintenance._isMaintenance(status);
+        return isClientError(status) || isMaintenance;
+      },
+
       resumeOrClose = function
           resumeOrClose(status) {
-        if (!isClientError(status) && !isMaintenance(status)) {
+        if (!shouldContinue(status)) {
           return close(o, exit);
         }
       };
@@ -391,14 +277,9 @@ createHandler = function createHandler(options) {
       return resumeOrClose(status);
     }
 
-    // If maintenance, set maintenance response header.
-    if (isMaintenance(status)) {
-      res.header(maintHeader());
-    }
-
-    // Always set a status.
+    // Always set a response status.
     res.status(status);
-
+    
     // If there's a custom handler defined,
     // use it and return.
     if (typeof handler === 'function') {
@@ -428,7 +309,7 @@ createHandler = function createHandler(options) {
     // attackers can send malformed requests
     // for the purpose of creating a Denial 
     // Of Service (DOS) attack.
-    if (isClientError(status) || isMaintenance(status)) {
+    if (shouldContinue(status)) {
       return renderDefault(status);
     }
 
@@ -450,46 +331,81 @@ createHandler = function createHandler(options) {
   }
 };
 
-// The Maintenance API
-maintenance.status = function(state) {
-  var enabledDefined = typeof this._maintEnabled === 'function';
-  var enabled = enabledDefined ? this._maintEnabled() : false;
+/**
+ * Maintenance middleware
+ * 
+ * @param {object} [options]
+ *
+ * @param {function} [options.status] - Returns Boolean to indicate
+ * the application is in maintenance mode. Default reads 
+ * ERR_HANDLER_MAINT_ENABLED environment variable - Value must be
+ * 'TRUE' to indicate an active maintenance condition, any other value 
+ * is false.
+ *
+ * @param {function} [options.retryAfter] - Returns
+ * Number or String value for Retry-After response header.
+ * Default reads ERR_HANDLER_MAINT_RETRYAFTER environment variable -
+ * Value must be a positive integer for retry after relative seconds,
+ * or an HTTP-date in GMT to indicate an absolte retry after period.
+ *
+ * @see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.4
+ * @see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
+ */
+createHandler.maintenance = function maintenance(options) {
+  options = options || {};
 
-  // A word on using the state argument.
-  // This is useful to manage the state in this one process environment.
-  // If you are using a service provider with multiple processes
-  // that maybe go up and down
-  // *don't use this function to set the maintenance state*
-  // In other words: Don't supply a state argument, ever.
-  // Instead use your provider's controlpanel/command to set the environment var
-  // for your Computing/Dyno/Whatever instances.
-  if (arguments.length > 0) {
+  var
+    status = typeof options.status === 'function' ?
+      options.status :
+      function status () {
+        return ('' + process.env.ERR_HANDLER_MAINT_ENABLED)
+          .trim().toLowerCase() === 'true';
+      },
 
-    if (enabledDefined && this._maintEnabled !== maintenanceState) {
-      // The Courtesy Throw
-      // If options.maintenance.enabled has been overridden,
-      // the user already manages the state, so this was a mistake.
-      // Reason: 
-      // The user has told us they manage the maintenance state elsewhere.
-      // Argument:
-      // Why would the user manage their own state, then give us their
-      // management callback *AND THEN* use this lib to call their own
-      // callback? (nonsense, I say. E_IRRELEVANT_COUPLING)
-      throw new Error(
-        'options.maintenance.enabled was overridden, '+
-        'so the caller manages the maintenance state.'
-      );
+    retryAfter = typeof options.retryAfter === 'function' ?
+      options.retryAfter :
+      function retryAfter() {
+        var result,
+            value = ('' + process.env.ERR_HANDLER_MAINT_RETRYAFTER).trim();
+        // fallback b/c user wants maintenance & no Retry-After means 500
+        var fallback = 3600;
+        // First, try seconds
+        result = parseInt(value, 10);
+        result = (result === 0 || (result && result < 0)) ? fallback : result;
+        if (!result) {
+          // NaN, try date
+          result = Date.parse(value) && value || fallback;
+        }
+        return result;
+      };
+
+  // Expose maintenance utility to errorHandler
+  createHandler.maintenance._isMaintenance = 
+    function _isMaintenance(statusCode) {
+      return (statusCode === 503 && status());
+    };
+
+  // Update exposed status method to any 503 handlers
+  createHandler.maintenance.status = status;
+
+  return function maintenanceMiddleware(req, res, next) {
+    var
+      maintenanceMode = function maintenanceMode() {
+        res.header({ 'Retry-After': retryAfter() });
+        return httpError(503)(req, res, next);
+      };
+
+    if ( status() ) {
+      return maintenanceMode();
+    } else {
+      return next();
     }
+  };
+};
+// Updated if user creates maintenance middleware.
+createHandler.maintenance.status = function() { return false; };
 
-    // Yep, call the default (see above test and explanation)
-    enabled = maintenanceState(state);
-  }
-
-  return enabled; 
-}.bind(maintenance);
-createHandler.maintenance = maintenance;
-
-// Client Error Functions
+// isClientError functions
 createHandler.isClientError = isClientError;
 createHandler.clientError = function () {
   var args = [].slice.call(arguments);

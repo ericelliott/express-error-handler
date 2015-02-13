@@ -260,10 +260,7 @@ createHandler = function createHandler(options) {
 
       shouldContinue = function
           shouldContinue(status) {
-        var isMaintenance = 
-          typeof createHandler.maintenance._isMaintenance === 'function' &&
-          createHandler.maintenance._isMaintenance(status);
-        return isClientError(status) || isMaintenance;
+        return isClientError(status) || status === 503;
       },
 
       resumeOrClose = function
@@ -348,6 +345,14 @@ createHandler = function createHandler(options) {
  * Value must be a positive integer for retry after relative seconds,
  * or an HTTP-date in GMT to indicate an absolte retry after period.
  *
+ * The default retryAfter implementation will return a fallback value of 3600
+ * seconds (1 hour). This is because retryAfter is only used if a
+ * maintenance condition is TRUE. To be an effective maintenance condition,
+ * the Retry-After response header must be defined with a legitimate value,
+ * or else the clients MUST interpret the response as a 500. Since the user
+ * already expressed a maintenance condition exists, this fallback makes it 
+ * so even if ERR_HANDLER_MAINT_RETRYAFTER is bad.
+ *
  * @see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.4
  * @see http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.37
  */
@@ -365,25 +370,17 @@ createHandler.maintenance = function maintenance(options) {
     retryAfter = typeof options.retryAfter === 'function' ?
       options.retryAfter :
       function retryAfter() {
-        var result,
-            value = ('' + process.env.ERR_HANDLER_MAINT_RETRYAFTER).trim();
-        // fallback b/c user wants maintenance & no Retry-After means 500
-        var fallback = 3600;
-        // First, try seconds
-        result = parseInt(value, 10);
-        result = (result === 0 || (result && result < 0)) ? fallback : result;
-        if (!result) {
-          // NaN, try date
-          result = Date.parse(value) && value || fallback;
-        }
-        return result;
-      };
+        var
+          seconds, trySeconds,
+          envSetting = ('' + process.env.ERR_HANDLER_MAINT_RETRYAFTER).trim(),
+          fallback = 3600;
 
-  // Expose maintenance utility to errorHandler
-  createHandler.maintenance._isMaintenance = 
-    function _isMaintenance(statusCode) {
-      return (statusCode === 503 && status());
-    };
+        trySeconds = parseInt(envSetting, 10);
+        seconds = (trySeconds === 0 || (trySeconds && trySeconds < 0)) ?
+          fallback : trySeconds;
+        
+        return seconds || (Date.parse(envSetting) && envSetting || fallback);
+      };
 
   // Update exposed status method to any 503 handlers
   createHandler.maintenance.status = status;

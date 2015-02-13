@@ -160,7 +160,7 @@ See the examples in `./examples/restify.js`
 
 ## Credit and Thanks
 
-Written by [Eric Elliott](http://ericelliottjs.com/) for the book, ["Programming JavaScript Applications"](http://www.amazon.com/gp/product/1491950293?ie=UTF8&camp=213733&creative=393185&creativeASIN=1491950293&linkCode=shr&tag=eejs-20&linkId=TSFLZ3FJX2X4WZ5H) (O'Reilly)
+Written by [Eric Elliott](http://ericelliottjs.com/) for the book, ["Programming JavaScript Applications"](http://pjabook.com) (O'Reilly)
 
 * [Nam Nguyen](https://github.com/gdbtek) for bringing the Express DOS exploit to my attention.
 * [Samuel Reed](https://github.com/strml) for helpful suggestions.

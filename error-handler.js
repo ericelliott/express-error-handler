@@ -1,11 +1,11 @@
 /**
  * express-error-handler
- * 
+ *
  * A graceful error handler for Express
  * applications.
  *
  * Copyright (C) 2013 Eric Elliott
- * 
+ *
  * Written for
  * "Programming JavaScript Applications"
  * (O'Reilly)
@@ -24,7 +24,7 @@ var mixIn = require('mout/object/mixIn'),
    * Return true if the error status represents
    * a client error that should not trigger a
    * restart.
-   * 
+   *
    * @param  {number} status
    * @return {boolean}
    */
@@ -35,7 +35,7 @@ var mixIn = require('mout/object/mixIn'),
   /**
    * Attempt a graceful shutdown, and then time
    * out if the connections fail to drain in time.
-   * 
+   *
    * @param  {object} o options
    * @param  {object} o.server server object
    * @param  {object} o.timeout timeout in ms
@@ -43,13 +43,13 @@ var mixIn = require('mout/object/mixIn'),
    */
   close = function close(o, exit) {
     // We need to kill the server process so
-    // the app can repair itself. Your process 
+    // the app can repair itself. Your process
     // should be monitored in production and
     // restarted when it shuts down.
-    // 
+    //
     // That can be accomplished with modules
     // like forever, forky, etc...
-    // 
+    //
     // First, try a graceful shutdown:
     if (o.server && typeof o.server.close ===
         'function') {
@@ -75,7 +75,7 @@ var mixIn = require('mout/object/mixIn'),
    * sends an error with the appropriate status
    * and message to an error handler via
    * `next(err)`.
-   * 
+   *
    * @param  {number} status
    * @param  {string} message
    * @return {function} Express route handler
@@ -96,6 +96,7 @@ var mixIn = require('mout/object/mixIn'),
     var filePath = path.resolve(staticFile),
       stream = fs.createReadStream(filePath);
     stream.pipe(res);
+    return stream;
   },
 
   send = function send(statusCode, err, res, o) {
@@ -129,28 +130,28 @@ var mixIn = require('mout/object/mixIn'),
 /**
  * A graceful error handler for Express
  * applications.
- * 
+ *
  * @param {object} [options]
- * 
+ *
  * @param {object} [options.handlers] Custom
  *        handlers for specific status codes.
  *
- * @param {object} [options.views] View files to 
- *        render in response to specific status 
+ * @param {object} [options.views] View files to
+ *        render in response to specific status
  *        codes. Specify a default with
  *        options.views.default.
  *
- * @param {object} [options.static] Static files 
- *        to send in response to specific status 
+ * @param {object} [options.static] Static files
+ *        to send in response to specific status
  *        codes. Specify a default with
  *        options.static.default.
  *
- * @param {number} [options.timeout] Delay 
+ * @param {number} [options.timeout] Delay
  *        between the graceful shutdown
  *        attempt and the forced shutdown
  *        timeout.
  *
- * @param {number} [options.exitStatus] Custom 
+ * @param {number} [options.exitStatus] Custom
  *        process exit status code.
  *
  * @param {object} [options.server] The app server
@@ -167,7 +168,7 @@ var mixIn = require('mout/object/mixIn'),
  * @param {function} framework Either 'express'
  *        (default) or 'restify'.
  *
- * @return {function} errorHandler Express error 
+ * @return {function} errorHandler Express error
  *         handling middleware.
  */
 createHandler = function createHandler(options) {
@@ -197,8 +198,8 @@ createHandler = function createHandler(options) {
    * Express error handler to handle any
    * uncaught express errors. For error logging,
    * see bunyan-request-logger.
-   * 
-   * @param  {object}   err 
+   *
+   * @param  {object}   err
    * @param  {object}   req
    * @param  {object}   res
    * @param  {function} next
@@ -276,7 +277,7 @@ createHandler = function createHandler(options) {
 
     // Always set a response status.
     res.status(status);
-    
+
     // If there's a custom handler defined,
     // use it and return.
     if (typeof handler === 'function') {
@@ -294,17 +295,20 @@ createHandler = function createHandler(options) {
     // If there's a custom static file defined,
     // render it.
     if (staticFile) {
-      sendFile(staticFile, res);
-      return resumeOrClose(status);
+      var stream = sendFile(staticFile, res);
+      stream.on('end', function () {
+        resumeOrClose(status);
+      });
+      return;
     }
 
     // If the error is user generated, send
     // a helpful error message, and don't shut
     // down.
-    // 
+    //
     // If we shutdown on user errors,
     // attackers can send malformed requests
-    // for the purpose of creating a Denial 
+    // for the purpose of creating a Denial
     // Of Service (DOS) attack.
     if (shouldContinue(status)) {
       return renderDefault(status);
@@ -330,13 +334,13 @@ createHandler = function createHandler(options) {
 
 /**
  * Maintenance middleware
- * 
+ *
  * @param {object} [options]
  *
  * @param {function} [options.status] - Returns Boolean to indicate
- * the application is in maintenance mode. Default reads 
+ * the application is in maintenance mode. Default reads
  * ERR_HANDLER_MAINT_ENABLED environment variable - Value must be
- * 'TRUE' to indicate an active maintenance condition, any other value 
+ * 'TRUE' to indicate an active maintenance condition, any other value
  * is false.
  *
  * @param {function} [options.retryAfter] - Returns
@@ -350,7 +354,7 @@ createHandler = function createHandler(options) {
  * maintenance condition is TRUE. To be an effective maintenance condition,
  * the Retry-After response header must be defined with a legitimate value,
  * or else the clients MUST interpret the response as a 500. Since the user
- * already expressed a maintenance condition exists, this fallback makes it 
+ * already expressed a maintenance condition exists, this fallback makes it
  * so even if ERR_HANDLER_MAINT_RETRYAFTER is bad.
  *
  * @see http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.5.4
@@ -378,7 +382,7 @@ createHandler.maintenance = function maintenance(options) {
         trySeconds = parseInt(envSetting, 10);
         seconds = (trySeconds === 0 || (trySeconds && trySeconds < 0)) ?
           fallback : trySeconds;
-        
+
         return seconds || (Date.parse(envSetting) && envSetting || fallback);
       };
 

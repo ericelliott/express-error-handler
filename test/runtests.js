@@ -5,6 +5,13 @@ var test = require('tape'),
   through = require('through'),
   mixIn = require('mout/object/mixIn'),
 
+  refreshCreateHandler = function() {
+    // Clear the error-handler from require cache so we can have a 
+    //  fresh look at the createHandler state.
+    delete require.cache[require.resolve('../error-handler.js')];
+    createHandler = require('../error-handler.js');
+  },
+
   format = function format (types) {
     return types['text']();
   },
@@ -15,6 +22,9 @@ var test = require('tape'),
     return mixIn({
       send: function send() {},
       end: function end() {},
+      header: function header(headers) {
+        this.headers = headers;
+      },
       format: format,
       status: function (statusCode) {
         this.statusCode = statusCode;
@@ -219,6 +229,11 @@ test('Static file', function (t) {
       t.end();
     });
 
+  res.status = res.status || function(code){
+    res.statusCode = code;
+    return res;
+  };
+
   handler(e, testReq(), res, testNext);
 });
 
@@ -270,6 +285,11 @@ test('Default static file', function (t) {
 
       t.end();
     });
+
+  res.status = res.status || function(code){
+    res.statusCode = code;
+    return res;
+  };
 
   handler(e, testReq(), res, testNext);
 });
@@ -390,4 +410,191 @@ test('JSON with serializer',
   e.status = 500;
 
   handler(e, testReq(), res, testNext);
+});
+
+test('maintenance enabled, fallback retyAfter, error status 503 kept for non-user error', 
+    function (t) {
+  refreshCreateHandler();
+
+  process.env.ERR_HANDLER_MAINT_ENABLED = 'TRUE';
+
+  // setup for maintenance
+  var maintHandler = createHandler.maintenance();
+
+  var shutdown = function shutdown() {},
+    e = new Error(),
+    handler = createHandler({
+      shutdown: shutdown
+    }),
+    status = 503,
+    defaultStatus = 500,
+    res = testRes({
+      send: function send() {        
+        t.equal(res.statusCode, status,
+          'res.statusCode should be kept for maintenance condition');
+        t.deepEqual(res.headers, { 'Retry-After': 3600 },
+          "Fallback retry-after response header should be set");
+        t.end();        
+      },
+      format: format
+    });
+
+  e.status = status;
+
+  maintHandler(testReq(), res, testNext);
+  handler(e, testReq(), res, testNext);  
+});
+
+test('maintenance enabled, set env vars, retryAfter seconds', 
+    function (t) {
+  refreshCreateHandler();
+
+  process.env.ERR_HANDLER_MAINT_ENABLED = 'TRUE';
+  process.env.ERR_HANDLER_MAINT_RETRYAFTER = 7200;
+
+  // setup for maintenance
+  var maintHandler = createHandler.maintenance();
+
+  var shutdown = function shutdown() {},
+    e = new Error(),
+    handler = createHandler({
+      shutdown: shutdown
+    }),
+    status = 503,
+    defaultStatus = 500,
+    res = testRes({
+      send: function send() {        
+        t.equal(res.statusCode, status,
+          'res.statusCode should be kept for maintenance condition');
+        t.deepEqual(res.headers, { 'Retry-After': 7200 },
+          "Explicit retry-after response header should be set");
+        t.end();        
+      },
+      format: format
+    });
+
+  e.status = status;
+
+  maintHandler(testReq(), res, testNext);
+  handler(e, testReq(), res, testNext);
+});
+
+test('maintenance enabled, set env vars, retryAfter date', 
+    function (t) {
+  refreshCreateHandler();
+
+  var raDate = 'Fri, 31 Dec 1999 23:59:59 GMT';
+  process.env.ERR_HANDLER_MAINT_ENABLED = 'TRUE';
+  process.env.ERR_HANDLER_MAINT_RETRYAFTER = raDate;
+
+  // setup for maintenance
+  var maintHandler = createHandler.maintenance();
+
+  var shutdown = function shutdown() {},
+    e = new Error(),
+    handler = createHandler({
+      shutdown: shutdown
+    }),
+    status = 503,
+    defaultStatus = 500,
+    res = testRes({
+      send: function send() {        
+        t.equal(res.statusCode, status,
+          'res.statusCode should be kept for maintenance condition');
+        t.deepEqual(res.headers, { 'Retry-After': raDate },
+          "Explicit retry-after response header should be set");
+        t.end();        
+      },
+      format: format
+    });
+
+  e.status = status;
+
+  maintHandler(testReq(), res, testNext);
+  handler(e, testReq(), res, testNext);  
+});
+
+test('maintenance overridden, retry after response should be set', 
+    function (t) {
+  refreshCreateHandler();
+
+  var retryAfterSeconds = 14400;
+
+  // these better be irrelevant
+  process.env.ERR_HANDLER_MAINT_ENABLED = 'TRUE';
+  process.env.ERR_HANDLER_MAINT_RETRYAFTER = retryAfterSeconds-10;
+
+  // setup for maintenance
+  var maintHandler = createHandler.maintenance({
+    status: function() { return true; },
+    retryAfter: function () { return retryAfterSeconds; }
+  });
+
+  var shutdown = function shutdown() {},
+    e = new Error(),
+    handler = createHandler({
+      shutdown: shutdown
+    }),
+    status = 503,
+    defaultStatus = 500,
+    res = testRes({
+      send: function send() {
+        t.deepEqual(res.headers,
+          { 'Retry-After': retryAfterSeconds },
+          "503 retry-after response header should be set");
+        t.end();
+      },
+      format: format
+    });
+
+  e.status = status;
+
+  maintHandler(testReq(), res, testNext);
+  handler(e, testReq(), res, testNext);
+});
+
+test('.maintenance.status', function (t) {
+  refreshCreateHandler();
+
+  var result, handler;
+
+  result = createHandler.maintenance.status();
+  t.equal(result, false, 'Should always be false before maintenance creation');
+
+  // setup for maintenance
+  createHandler.maintenance();
+
+  delete process.env.ERR_HANDLER_MAINT_ENABLED;
+  handler = createHandler();
+  result = createHandler.maintenance.status();
+  t.equal(result, false, 'Should be false if no maintenance');
+
+  process.env.ERR_HANDLER_MAINT_ENABLED = 'FALSE';
+  handler = createHandler();
+  result = createHandler.maintenance.status();
+  t.equal(result, false, 'Should be false if maintenance disabled in env');
+
+  process.env.ERR_HANDLER_MAINT_ENABLED = 'TRUE';
+  handler = createHandler();
+  result = createHandler.maintenance.status();
+  t.equal(result, true, 'Should be true if maintenance enabled in env');
+
+  refreshCreateHandler();
+  createHandler.maintenance({
+    status: function() { return false; }
+  });
+
+  handler = createHandler();
+  result = createHandler.maintenance.status();
+  t.equal(result, false, 'Should be false if status overridden to disabled');
+
+  refreshCreateHandler();
+  createHandler.maintenance({
+    status: function() { return true; }
+  });
+  handler = createHandler();
+  result = createHandler.maintenance.status();
+  t.equal(result, true, 'Should be true if 503 and maintenance enabled');
+
+  t.end();
 });

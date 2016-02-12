@@ -24,8 +24,6 @@
     "url": "https://github.com/dilvie/express-error-handler/issues"
   },
   "dependencies": {
-    "connect-domain": "~0.5.0",
-    "json-stringify-safe": "^5.0.0",
     "mout": "~0.7.1"
   },
   "devDependencies": {

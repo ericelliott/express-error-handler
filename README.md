@@ -58,6 +58,7 @@ Here are the parameters you can pass into the `errorHandler()` middleware:
 * @param {object} [options.server] The app server object for graceful shutdowns.
 * @param {function} [options.shutdown] An alternative shutdown function if the graceful shutdown fails.
 * @param {function} serializer a function to customize the JSON error object. Usage: serializer(err) return errObj
+* @param {boolean} [options.verbose] Whether to pass through additional error properties (code, name, type, details) to the JSON response, for use with [http-errors](https://github.com/jshttp/http-errors)-style error objects a la [api-error-handler](https://github.com/expressjs/api-error-handler), defaults to false.
 * @param {function} framework Either 'express' (default) or 'restify'.
 * @return {function} errorHandler Express error handling middleware.
 

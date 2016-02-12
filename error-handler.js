@@ -104,11 +104,13 @@ var mixIn = require('mout/object/mixIn'),
         message: err.message ||
           statusCodes[statusCode]
       };
-      
-    if (err.code) body.code = err.code;
-    if (err.name) body.name = err.name;
-    if (err.type) body.type = err.type;
-    if (err.details) body.details = err.details;
+
+    if (o.verbose) {
+      if (err.code) body.code = err.code;
+      if (err.name) body.name = err.name;
+      if (err.type) body.type = err.type;
+      if (err.details) body.details = err.details;      
+    }
 
     body = (o.serializer) ?
       o.serializer(body) :
@@ -127,6 +129,7 @@ var mixIn = require('mout/object/mixIn'),
     server: undefined,
     shutdown: undefined,
     serializer: undefined,
+    verbose: false,
     framework: 'express'
   },
   createHandler;
@@ -168,6 +171,11 @@ var mixIn = require('mout/object/mixIn'),
  * @param {function} serializer A function to
  *        customize the JSON error object.
  *        Usage: serializer(err) return errObj
+ *
+ * @param {boolean} [options.verbose] Pass
+ *        through additional error objejct
+ *        properties (code, name, type and
+ *        details) in JSON response.
  *
  * @param {function} framework Either 'express'
  *        (default) or 'restify'.
@@ -242,7 +250,8 @@ createHandler = function createHandler(options) {
               send(statusCode, err, res, {
                 serializer: o.serializer || function (o) {
                   return o;
-                }
+                },
+                verbose: o.verbose
               });
             },
             text: function () {

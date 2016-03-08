@@ -16,6 +16,7 @@
 'use strict';
 
 var mixIn = require('mout/object/mixIn'),
+  fillIn = require('mout/object/fillIn'),
   path = require('path'),
   fs = require('fs'),
   statusCodes = require('http').STATUS_CODES,
@@ -106,7 +107,7 @@ var mixIn = require('mout/object/mixIn'),
       };
 
     body = (o.serializer) ?
-      o.serializer(mixIn({}, body, err)) :
+      o.serializer(fillIn(err, body)) :
       body;
 
     res.status(statusCode);

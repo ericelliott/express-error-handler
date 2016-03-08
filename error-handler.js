@@ -104,11 +104,6 @@ var mixIn = require('mout/object/mixIn'),
         message: err.message ||
           statusCodes[statusCode]
       };
-      
-    if (err.code) body.code = err.code;
-    if (err.name) body.name = err.name;
-    if (err.type) body.type = err.type;
-    if (err.details) body.details = err.details;
 
     body = (o.serializer) ?
       o.serializer(body) :

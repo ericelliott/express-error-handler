@@ -99,11 +99,12 @@ var mixIn = require('mout/object/mixIn'),
     stream.pipe(res);
   },
 
-  send = function send(statusCode, err, res, o) {
+  send = function send(statusCode, err, res, o) {    
+    if (!err.message) err.message = statusCodes[statusCode];
+    
     var body = {
         status: statusCode,
-        message: err.message ||
-          statusCodes[statusCode]
+        message: err.message
       };
 
     body = (o.serializer) ?

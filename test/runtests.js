@@ -365,10 +365,10 @@ test('JSON with serializer',
     e = new Error(),
     handler = createHandler({
       shutdown: shutdown,
-      serializer: function (body) {
+      serializer: function (err) {
         return {
-          status: body.status,
-          message: body.message,
+          status: err.status,
+          message: err.message,
           links: [
             {self: '/foo'}
           ]
@@ -376,7 +376,7 @@ test('JSON with serializer',
       }
     }),
     res = testRes({
-    send: function send(obj) {
+      send: function send(obj) {
         t.equal(obj.links[0].self, '/foo',
           'Should be able to define a custom ' +
           'serializer for error responses.');
@@ -388,6 +388,76 @@ test('JSON with serializer',
     });
 
   e.status = 500;
+
+  handler(e, testReq(), res, testNext);
+});
+
+test('JSON with serializer with access to error object', 
+    function (t) {
+
+  var shutdown = function shutdown() {},
+    e = (function () {
+      var err = new Error();
+      err.status = 400;
+      ['code', 'name', 'type', 'details'].forEach(function(prop) { err[prop] = 'foo'; });
+      return err;
+    }()),
+    handler = createHandler({
+      shutdown: shutdown,
+      serializer: function(err) { return err }
+    }),
+    res = testRes({
+      send: function send(obj) {
+        var propertiesPass = ['code', 'name', 'type', 'details'].every(function(prop) {
+          return obj[prop] === 'foo';
+        });
+        t.ok(propertiesPass,
+          'Should be able to write custom serializer with access to properties of client errors.');
+        t.end();
+      },
+      format: function format (types) {
+        return types['json']();
+      }
+    });
+
+    handler(e, testReq(), res, testNext);
+  });
+
+test('JSON with intelligent serializer that utilizes isClientError internally', 
+    function (t) {
+
+  var shutdown = function shutdown() {},
+    e = (function () {
+      var err = new Error();
+      err.status = 500;
+      ['code', 'name', 'type', 'details'].forEach(function(prop) { err[prop] = 'foo'; });
+      return err;
+    }()),
+    handler = createHandler({
+      shutdown: shutdown,
+      serializer: function(err) {
+        var body = { status: err.status, message: err.message };
+        if (createHandler.isClientError(err.status)) {
+          ['code', 'name', 'type', 'details'].forEach(function(prop) {
+            if (err[prop]) body[prop] = err[prop];
+          });
+        }
+        return body;
+      }
+    }),
+    res = testRes({
+    send: function send(obj) {
+      var propertiesPass = ['code', 'name', 'type', 'details'].every(function(prop) {
+        return !obj[prop];
+      });
+      t.ok(propertiesPass,
+        'Should be able to write custom serializer that hides properties of non-client errors.');
+      t.end();
+    },
+    format: function format (types) {
+      return types['json']();
+    }
+  });
 
   handler(e, testReq(), res, testNext);
 });

@@ -107,6 +107,25 @@ handler = errorHandler({
 });
 ```
 
+Or for a custom JSON object:
+```js
+var errorHandler = require('express-error-handler'),
+  handler = errorHandler({
+    serializer: function(err) {
+      var body = {
+        status: err.status,
+        message: err.message
+      };
+      if (createHandler.isClientError(err.status)) {
+        ['code', 'name', 'type', 'details'].forEach(function(prop) {
+          if (err[prop]) body[prop] = err[prop];
+        });
+      }
+      return body;
+    }
+  });
+```
+
 [More examples](https://github.com/dilvie/express-error-handler/tree/master/examples) are available in the examples folder.
 
 ## errorHandler.isClientError(status)

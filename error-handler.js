@@ -106,7 +106,7 @@ var mixIn = require('mout/object/mixIn'),
       };
 
     body = (o.serializer) ?
-      o.serializer(body) :
+      o.serializer(mixIn({}, body, err)) :
       body;
 
     res.status(statusCode);

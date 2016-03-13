@@ -110,7 +110,7 @@ test('Custom views', function (t) {
     }),
     res = testRes({
       render: function render() {
-        t.pass('Render should be called for ' + 
+        t.pass('Render should be called for ' +
           'custom views.');
         t.end();
       }
@@ -121,7 +121,7 @@ test('Custom views', function (t) {
   handler(e, testReq(), res, testNext);
 });
 
-test('Error with status default behavior', 
+test('Error with status default behavior',
     function (t) {
 
   var shutdown = function shutdown() {
@@ -146,7 +146,7 @@ test('Error with status default behavior',
   handler(e, testReq(), res, testNext);
 });
 
-test('Default error status for non-user error', 
+test('Default error status for non-user error',
     function (t) {
 
   var shutdown = function shutdown() {},
@@ -170,7 +170,7 @@ test('Default error status for non-user error',
   handler(e, testReq(), res, testNext);
 });
 
-test('Custom timeout', 
+test('Custom timeout',
     function (t) {
 
   var shutdown = function shutdown(options) {
@@ -303,7 +303,7 @@ test('.create() http error handler', function (t) {
   handler(null, null, next);
 });
 
-test('JSON error format', 
+test('JSON error format',
     function (t) {
 
   var shutdown = function shutdown() {},
@@ -314,10 +314,10 @@ test('JSON error format',
     res = testRes({
       send: function send(obj) {
         t.equal(obj.status, 500,
-          'res.send() should be called ' + 
+          'res.send() should be called ' +
           'with error status on response body.');
         t.equal(obj.message, 'Internal Server Error',
-          'res.send() should be called ' + 
+          'res.send() should be called ' +
           'with error message on response body.');
         t.end();
       },
@@ -331,7 +331,7 @@ test('JSON error format',
   handler(e, testReq(), res, testNext);
 });
 
-test('JSON with custom error message', 
+test('JSON with custom error message',
     function (t) {
 
   var shutdown = function shutdown() {},
@@ -342,7 +342,7 @@ test('JSON with custom error message',
     res = testRes({
       send: function send(obj) {
         t.equal(obj.message, 'half baked',
-          'res.send() should be called ' + 
+          'res.send() should be called ' +
           'with custom error message.');
         t.end();
       },
@@ -358,7 +358,7 @@ test('JSON with custom error message',
 });
 
 
-test('JSON with serializer', 
+test('JSON with serializer',
     function (t) {
 
   var shutdown = function shutdown() {},
@@ -392,7 +392,7 @@ test('JSON with serializer',
   handler(e, testReq(), res, testNext);
 });
 
-test('JSON with serializer with access to error object', 
+test('JSON with serializer with access to error object',
     function (t) {
 
   var shutdown = function shutdown() {},
@@ -404,7 +404,7 @@ test('JSON with serializer with access to error object',
     }()),
     handler = createHandler({
       shutdown: shutdown,
-      serializer: function(err) { return err }
+      serializer: function(err) { return err; }
     }),
     res = testRes({
       send: function send(obj) {

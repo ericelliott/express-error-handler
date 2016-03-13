@@ -4,7 +4,12 @@
   "description": "A graceful error handler for Express applications.",
   "main": "error-handler.js",
   "scripts": {
-    "test": "node ./test/runtests.js"
+    "lint": "grunt hint",
+    "pretest": "npm run -s lint",
+    "test": "node ./test/runtests.js",
+    "watch": "watch 'clear && npm run -s test' .",
+    "start-example": "node examples/app.js | bunyan",
+    "latest": "updtr"
   },
   "repository": {
     "type": "git",
@@ -24,17 +29,19 @@
     "url": "https://github.com/dilvie/express-error-handler/issues"
   },
   "dependencies": {
-    "mout": "~0.7.1"
+    "mout": "0.12.0"
   },
   "devDependencies": {
-    "bunyan-request-logger": "~0.1.1",
-    "connect-cache-control": "~0.1.0",
+    "bunyan-request-logger": "1.0.2",
+    "connect-cache-control": "1.0.0",
     "express": "^4.9.8",
     "grunt": "~0.4.1",
-    "grunt-contrib-jshint": "~0.6.4",
-    "restify": "~2.6.0",
-    "supertest": "~0.8.0",
-    "tape": "~1.1.1",
-    "through": "~2.3.4"
+    "grunt-contrib-jshint": "1.0.0",
+    "restify": "4.0.4",
+    "supertest": "1.2.0",
+    "tape": "4.5.1",
+    "through": "~2.3.4",
+    "updtr": "0.1.7",
+    "watch": "0.17.1"
   }
 }

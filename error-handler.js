@@ -16,6 +16,7 @@
 'use strict';
 
 var mixIn = require('mout/object/mixIn'),
+  createObject = require('mout/lang/createObject'),
   path = require('path'),
   fs = require('fs'),
   statusCodes = require('http').STATUS_CODES,
@@ -106,13 +107,13 @@ var mixIn = require('mout/object/mixIn'),
       };
 
     body = (o.serializer) ?
-      o.serializer(body) :
+      o.serializer(createObject(err, body)) :
       body;
 
     res.status(statusCode);
     res.send(body);
   },
-
+  
   defaults = {
     handlers: {},
     views: {},

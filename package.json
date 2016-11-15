@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@github.com:dilvie/express-error-handler.git"
+    "url": "git@github.com:ericelliott/express-error-handler.git"
   },
   "keywords": [
     "error",
@@ -26,7 +26,7 @@
   "author": "Eric Elliott",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/dilvie/express-error-handler/issues"
+    "url": "https://github.com/ericelliott/express-error-handler/issues"
   },
   "dependencies": {
     "mout": "0.12.0"

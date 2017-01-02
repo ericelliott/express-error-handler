@@ -55,19 +55,19 @@ var mixIn = require('mout/object/mixIn'),
     if (o.server && typeof o.server.close ===
         'function') {
       try {
-        o.server.close(function () {
-          process.exit(o.exitStatus);
+        o.server.close(function (err) {
+          if (!err) {
+            process.exit(o.exitStatus);
+          }
         });
       }
-      finally {
-        process.exit(o.exitStatus);
-      }
+      catch(ex) { } // node 0.10 may throw upon close()
     }
 
     // Just in case the server.close() callback
-    // never fires, this will wait for a timeout
-    // and then terminate. Users can override
-    // this function by passing options.shutdown:
+    // never fires or if an error occurs, this will
+    // wait for a timeout and then terminate. Users
+    // can override this function by passing options.shutdown:
     exit(o);
   },
 

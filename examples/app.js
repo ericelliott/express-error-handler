@@ -1,5 +1,3 @@
-'use strict';
-
 var express = require('express'),
   logger = require('bunyan-request-logger'),
   noCache = require('connect-cache-control'),

@@ -1,5 +1,3 @@
-'use strict';
-
 var test = require('tape'),
   createHandler = require('../error-handler.js'),
   through = require('through'),

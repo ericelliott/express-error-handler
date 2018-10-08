@@ -1,5 +1,3 @@
-'use strict';
-
 var restify = require('restify'),
   server = restify.createServer(),
   errorHandler = require('../error-handler.js'),

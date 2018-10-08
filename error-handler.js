@@ -13,8 +13,6 @@
  * MIT License
  **/
 
-'use strict';
-
 var mixIn = require('mout/object/mixIn'),
   createObject = require('mout/lang/createObject'),
   path = require('path'),

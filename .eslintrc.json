@@ -266,7 +266,7 @@
             "error",
             "always"
         ],
-        "strict": "error",
+        "strict": 0,
         "switch-colon-spacing": "error",
         "symbol-description": "error",
         "template-curly-spacing": "error",

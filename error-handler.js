@@ -325,7 +325,7 @@ createHandler.isClientError = isClientError;
 createHandler.clientError = function () {
   var args = [].slice.call(arguments);
 
-  console.log('WARNING: .clientError() is ' +
+  console.log('WARNING: .clientError() is ' + // eslint-disable-line no-console
     'deprecated. Use isClientError() instead.');
 
   return this.isClientError.apply(this, args);

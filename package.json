@@ -39,7 +39,7 @@
     "grunt-contrib-jshint": "1.1.0",
     "restify": "4.3.4",
     "supertest": "1.2.0",
-    "tape": "4.5.1",
+    "tape": "4.10.0",
     "through": "2.3.8",
     "updtr": "0.1.7",
     "watch": "0.17.1"

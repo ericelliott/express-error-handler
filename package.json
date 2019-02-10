@@ -29,7 +29,7 @@
     "url": "https://github.com/ericelliott/express-error-handler/issues"
   },
   "dependencies": {
-    "mout": "0.12.0"
+    "mout": "1.1.0"
   },
   "devDependencies": {
     "bunyan-request-logger": "1.1.0",

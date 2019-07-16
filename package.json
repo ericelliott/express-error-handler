@@ -32,7 +32,7 @@
     "mout": "1.1.0"
   },
   "devDependencies": {
-    "bunyan-request-logger": "2.0.1",
+    "bunyan-request-logger": "2.1.0",
     "connect-cache-control": "1.0.0",
     "express": "4.17.1",
     "grunt": "0.4.5",

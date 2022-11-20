@@ -37,7 +37,7 @@
     "express": "4.17.1",
     "grunt": "0.4.5",
     "grunt-contrib-jshint": "1.1.0",
-    "restify": "7.7.0",
+    "restify": "9.0.0",
     "supertest": "4.0.2",
     "tape": "4.13.2",
     "through": "2.3.8",
